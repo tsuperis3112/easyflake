@@ -24,10 +24,9 @@ jobs:
       uses: snok/install-poetry@v1
       with:
         version: 1.3.2
-        virtualenvs-create: false
     - name: Install dependencies
       run: |
-        poetry install --only main,test
+        pip install tox
     - name: Run tests
       run: tox
     # - name: Upload coverage to Codecov
