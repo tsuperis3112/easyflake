@@ -1,6 +1,8 @@
-from easyflake.sequence import ScaledClock
 from datetime import datetime
+
 from freezegun import freeze_time
+
+from easyflake.sequence import ScaledClock
 
 
 def test_current():

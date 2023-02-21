@@ -9,19 +9,20 @@ class TimeScale:
 
 
 class ScaledClock:
-    def __init__(self, scale: int, timestamp_offset: float):
+    def __init__(self, scale: int, epoch: float):
         """
         A clock that counts up with a certain scale factor.
 
         Args:
             scale (int): The scale factor for the clock. Must be between 0 and 6.
+            epoch (float): The epoch timestamp.
         """
         if not TimeScale.SECOND <= scale <= TimeScale.MICRO:
             raise ValueError(
                 f"Please set a scale between {TimeScale.SECOND} and {TimeScale.MICRO}."
             )
         self.scale_factor = 10**scale
-        self.timestamp_offset = int(timestamp_offset * self.scale_factor)
+        self.epoch = int(epoch * self.scale_factor)
         self.initialize_timestamp = int(time.time() * self.scale_factor)
 
     def current(self) -> int:
@@ -47,7 +48,7 @@ class ScaledClock:
             + years * 31536000
             + time.time()
         )
-        duration = to * self.scale_factor - self.timestamp_offset
+        duration = to * self.scale_factor - self.epoch
         return math.ceil(math.log(duration, 2))
 
     def get_elapsed_time(self, scaled: int) -> int:
@@ -60,4 +61,4 @@ class ScaledClock:
         Returns:
             int: The real-world timestamp.
         """
-        return scaled + self.initialize_timestamp - self.timestamp_offset
+        return scaled + self.initialize_timestamp - self.epoch

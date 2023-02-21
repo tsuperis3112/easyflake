@@ -1,6 +1,6 @@
-import multiprocessing
 import threading
 from dataclasses import dataclass
+from multiprocessing import Value
 from multiprocessing.sharedctypes import Synchronized
 from typing import TYPE_CHECKING
 
@@ -37,7 +37,7 @@ class TimeBasedSequenceGenerator:
     def __init__(
         self,
         sequence_bits: int,
-        timestamp_offset: float,
+        epoch: float,
         time_scale: int,
         use_multithread=True,
         use_multiprocess=True,
@@ -45,7 +45,7 @@ class TimeBasedSequenceGenerator:
         """
         Args:
             sequence_bits (int): The bits of sequential ID.
-            timestamp_offset (datetime): The base datetime to calculate the timestamp
+            epoch (float): The base datetime to calculate the timestamp
             time_scale (int): The scale of the timestamp to use. The ID sequence will
                               be incremented at intervals determined by the scale.
             use_multithread (bool): Whether to use a multi-threaded lock.
@@ -53,19 +53,19 @@ class TimeBasedSequenceGenerator:
         """
         self._sequence_bits = sequence_bits
         self._sequence_max = 2**self._sequence_bits - 1
-        self._clock = ScaledClock(time_scale, timestamp_offset=timestamp_offset)
+        self._clock = ScaledClock(time_scale, epoch=epoch)
 
         if TYPE_CHECKING:
             self._shared_value: Synchronized[int]
         _, val = self._attach_timestamp_to_value(0)
         self._shared_value = (
-            multiprocessing.Value("Q", val) if use_multiprocess else _DummyLock()
-        )  # type: ignore
+            Value("Q", val) if use_multiprocess else _DummyLock()  # type: ignore
+        )
         self._thread_lock = threading.Lock() if use_multithread else _DummyLock()
 
     def get_required_bits(self, **duration):
         """
-        Get the number of bits required to represent given years, days, hours, minutes, seconds.
+        Get the number of bits to represent given years, days, hours, minutes, seconds.
         """
         return self._clock.bits_for_duration(**duration) + self._sequence_bits
 
