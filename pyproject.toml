@@ -2,7 +2,7 @@
 name = "easyflake"
 version = "0.0.2"
 description = "EasyFlake is a Python package for generating 64-bit IDs similar to Snowflake or Sonyflake."
-authors = ["tsuperis <tsuperis@gmail.com>"]
+authors = ["Takeru Furuse <tsuperis@gmail.com>"]
 readme = "README.md"
 packages = [{include = "easyflake", from = "src"}]
 
