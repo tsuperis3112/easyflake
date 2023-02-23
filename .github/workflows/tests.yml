@@ -2,11 +2,19 @@ name: Test
 
 on:
   pull_request:
-    paths-ignore:
-      - 'docs/**'
+    paths:
+      - "pyproject.toml"
+      - "poetry.lock"
+      - 'tox.ini'
+      - '**.py'
   push:
     branches:
       - main
+    paths:
+      - "pyproject.toml"
+      - "poetry.lock"
+      - 'tox.ini'
+      - '**.py'
 
 jobs:
   test:
@@ -28,9 +36,7 @@ jobs:
       run: pip install tox
     - name: Run tests
       run: tox
-    # - name: Upload coverage to Codecov
-    #   uses: codecov/codecov-action@v1
-    #   with:
-    #     token: ${{ secrets.CODECOV_TOKEN }}
-    #     flags: unittests
-    #     fail_ci_if_error: true
+    - name: Upload Coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        fail_ci_if_error: true

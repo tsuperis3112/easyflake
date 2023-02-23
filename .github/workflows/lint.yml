@@ -1,0 +1,25 @@
+name: Lint
+
+on:
+  pull_request:
+    paths:
+      - ".pre-commit-config.yaml"
+      - '**.py'
+  push:
+    branches:
+      - main
+    paths:
+      - ".pre-commit-config.yaml"
+      - '**.py'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v4
+    - name: Install dependencies
+      run: pip install pre-commit
+    - name: Run lint
+      run: pre-commit run --all-files

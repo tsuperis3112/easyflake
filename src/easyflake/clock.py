@@ -23,14 +23,14 @@ class ScaledClock:
             )
         self.scale_factor = 10**scale
         self.epoch = int(epoch * self.scale_factor)
-        self.initialize_timestamp = int(time.time() * self.scale_factor)
+        self._initialize_timestamp = int(time.time() * self.scale_factor)
 
     def current(self) -> int:
         """
         Return the current time elapsed since the start timestamp, expressed in the
         clock's units of measurement.
         """
-        return int(time.time() * self.scale_factor) - self.initialize_timestamp
+        return int(time.time() * self.scale_factor) - self._initialize_timestamp
 
     def sleep(self):
         """Sleeps for 1/10 clock tick."""
@@ -49,7 +49,7 @@ class ScaledClock:
             + time.time()
         )
         duration = to * self.scale_factor - self.epoch
-        return math.ceil(math.log(duration, 2))
+        return math.floor(math.log(duration, 2)) + 1
 
     def get_elapsed_time(self, scaled: int) -> int:
         """
@@ -61,4 +61,4 @@ class ScaledClock:
         Returns:
             int: The real-world timestamp.
         """
-        return scaled + self.initialize_timestamp - self.epoch
+        return scaled + self._initialize_timestamp - self.epoch
