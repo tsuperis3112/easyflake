@@ -36,11 +36,15 @@ print(ef.get_id())
 
 ### Arguments
 
-* `node_id` (int): A unique ID for the current node. This ID should be between 0 and (2 ^ node_id_bits) - 1, where `node_id_bits` is an optional argument that defaults to 8.
-* `node_id_bits` (int, optional): The maximum number of bits used to represent the node ID. This argument defaults to 8.
-* `sequence_bits` (int, optional): The maximum number of bits used to represent the sequence number. This argument defaults to 10.
-* `epoch` (float, optional): A timestamp used as a reference when generating the timestamp section of the ID. This argument defaults to 1675859040(2023-02-08T12:24:00Z).
-* `time_scale` (int, optional): The number of decimal places used to represent the timestamp. This argument defaults to 3(milliseconds).
+* `node_id` (int): A unique ID for the current node. This ID should be between 0 and (2 ^ node_id_bits) - 1. If no argument is given, a random value is assigned to the node ID.
+* `node_id_bits` (int): The maximum number of bits used to represent the node ID. This argument defaults to 8 / max node ID is 255.
+* `sequence_bits` (int): The maximum number of bits used to represent the sequence number. This argument defaults to 8 / max sequence number is 255.
+* `epoch` (float): A timestamp used as a reference when generating the timestamp section of the ID. This argument defaults to 1675859040 (2023-02-08T12:24:00Z).
+* `time_scale` (int): The number of decimal places used to represent the timestamp. This argument defaults to 3 (milliseconds).
+
+## Contributing
+
+See the [contributing guide](https://github.com/tsuperis/easyflake/blob/main/CONTRIBUTING.md).
 
 ## License
 

@@ -16,7 +16,7 @@ class EasyFlake:
     def __init__(
         self,
         node_id: Union[int, Callable[[int], int]] = secrets.randbits,
-        node_id_bits: int = 10,
+        node_id_bits: int = 8,
         sequence_bits: int = 8,
         epoch: float = DEFAULT_EPOCH_TIMESTAMP,
         time_scale: int = TimeScale.MILLI,
