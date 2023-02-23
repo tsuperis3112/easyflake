@@ -1,10 +1,18 @@
 [tool.poetry]
 name = "easyflake"
-version = "0.0.4"
+version = "0.0.5"
 description = "EasyFlake is a Python package for generating 64-bit IDs similar to Snowflake or Sonyflake."
 authors = ["Takeru Furuse <tsuperis@gmail.com>"]
 readme = "README.md"
+homepage = "https://github.com/tsuperis/easyflake"
+repository = "https://github.com/tsuperis/easyflake"
 packages = [{include = "easyflake"}]
+keywords = ["snowflake", "sonyflake", "easyflake"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities"
+]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"
