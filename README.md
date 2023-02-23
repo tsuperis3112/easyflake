@@ -1,6 +1,7 @@
 # EasyFlake
 
 [![Test passing](https://github.com/tsuperis/easyflake/actions/workflows/tests.yml/badge.svg)](https://github.com/tsuperis/easyflake/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/tsuperis/easyflake/branch/main/graph/badge.svg?token=3TIHGMYN1G)](https://codecov.io/gh/tsuperis/easyflake)
 ![PyPI](https://img.shields.io/pypi/v/easyflake)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/easyflake)
 [![License](https://img.shields.io/github/license/tsuperis/easyflake)](LICENSE)
