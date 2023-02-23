@@ -25,7 +25,6 @@ class TestEasyFlake(TestCase):
 
     def test_instance_critical_lifetime(self):
         common_args = {
-            "node_id": 0,
             "node_id_bits": 10,
             "sequence_bits": 10,
             "time_scale": TimeScale.SECOND,
@@ -42,7 +41,6 @@ class TestEasyFlake(TestCase):
 
     def test_instance_dangerous_lifetime(self):
         common_args = {
-            "node_id": 0,
             "node_id_bits": 10,
             "sequence_bits": 10,
             "time_scale": TimeScale.SECOND,

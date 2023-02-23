@@ -1,8 +1,13 @@
+import secrets
+from typing import Callable, Union
+
 from easyflake.clock import TimeScale
 from easyflake.log import warn
 from easyflake.sequence import TimeBasedSequenceGenerator
 
 DEFAULT_EPOCH_TIMESTAMP = 1675859040
+
+UNSET = type("UNSET", (), {})
 
 
 class EasyFlake:
@@ -10,7 +15,7 @@ class EasyFlake:
 
     def __init__(
         self,
-        node_id: int,  # TODO: auto generate
+        node_id: Union[int, Callable[[int], int]] = secrets.randbits,
         node_id_bits: int = 10,
         sequence_bits: int = 8,
         epoch: float = DEFAULT_EPOCH_TIMESTAMP,
@@ -21,20 +26,23 @@ class EasyFlake:
         Class for generating 64-bit IDs similar to Snowflake or Sonyflake.
 
         Args:
-            node_id (int): node ID of execution environment
-            node_id_bits (int, optional): maximum number of bits in node ID part.
-            sequence_bits (int, optional): maximum number of bits in sequence ID part.
-            epoch (float, optional): Timestamp that is used as a reference when
+            node_id (int): node ID of execution environment. Default to random
+            node_id_bits (int): maximum number of bits in node ID part.
+            sequence_bits (int): maximum number of bits in sequence ID part.
+            epoch (float): Timestamp that is used as a reference when
                                      generating bits of timestamp section.
                                      Defaults to 2023-02-08T12:24:00Z.
-            time_scale (int, optional): number of decimal places in timestamp.
+            time_scale (int): number of decimal places in timestamp.
         """
-        self.node_id_bits = node_id_bits
-        self.sequence_bits = sequence_bits
+        self._node_id_bits = node_id_bits
+        self._sequence_bits = sequence_bits
 
-        self.node_id = node_id
+        if callable(node_id):
+            self._node_id = node_id(node_id_bits)
+        else:
+            self._node_id = node_id
 
-        self.sequence_generator = TimeBasedSequenceGenerator(
+        self._sequence_generator = TimeBasedSequenceGenerator(
             bits=sequence_bits,
             epoch=epoch,
             time_scale=time_scale,
@@ -44,10 +52,10 @@ class EasyFlake:
 
     def get_id(self):
         """generate next ID by current timestamp"""
-        seq = self.sequence_generator.next()
+        seq = self._sequence_generator.next()
         return (
-            (seq.timestamp << (self.sequence_bits + self.node_id_bits))
-            | (self.node_id << self.sequence_bits)
+            (seq.timestamp << (self._sequence_bits + self._node_id_bits))
+            | (self._node_id << self._sequence_bits)
             | seq.value
         )
 
@@ -58,18 +66,18 @@ class EasyFlake:
         self._validate_id_length()
 
     def _validate_node_id(self):
-        if self.node_id_bits < 1:
+        if self._node_id_bits < 1:
             raise ValueError("node_id_bits is required to be >0")
 
-        max_node_id = (1 << self.node_id_bits) - 1
-        if not 0 <= self.node_id <= max_node_id:
+        max_node_id = (1 << self._node_id_bits) - 1
+        if not 0 <= self._node_id <= max_node_id:
             raise ValueError(
                 f"node_id is required to be >=0 and <={max_node_id}, "
-                f"but {self.node_id} is given."
+                f"but {self._node_id} is given."
             )
 
     def _validate_sequence_bits(self):
-        if self.sequence_bits < 1:
+        if self._sequence_bits < 1:
             raise ValueError("sequence_bits is required to be >0")
 
     def _validate_id_length(self):
@@ -80,6 +88,6 @@ class EasyFlake:
             warn("Unable to count timestamp within 10 years.")
 
     def _has_sufficient_timestamp_bits(self, **duration):
-        timestamp_bits = self.sequence_generator.get_required_bits(**duration)
-        bits = timestamp_bits + self.node_id_bits + self.sequence_bits
+        timestamp_bits = self._sequence_generator.get_required_bits(**duration)
+        bits = timestamp_bits + self._node_id_bits + self._sequence_bits
         return bits < self.id_bits
