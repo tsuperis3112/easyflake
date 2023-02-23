@@ -13,7 +13,7 @@ on:
       - '**.py'
 
 jobs:
-  test:
+  lint_and_format:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
