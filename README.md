@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/tsuperis/easyflake/branch/main/graph/badge.svg?token=3TIHGMYN1G)](https://codecov.io/gh/tsuperis/easyflake)
 ![PyPI](https://img.shields.io/pypi/v/easyflake)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/easyflake)
-[![License](https://img.shields.io/github/license/tsuperis/easyflake)](LICENSE)
+[![License](https://img.shields.io/github/license/tsuperis/easyflake)](https://github.com/tsuperis/easyflake/blob/main/LICENSE)
 
 EasyFlake is a Python package for generating 64-bit IDs similar to Snowflake or Sonyflake. It provides a simple way to generate unique and sortable IDs that can be used as primary keys in databases, message queue messages, or other distributed systems.
 
@@ -44,4 +44,4 @@ print(ef.get_id())
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/tsuperis/easyflake/blob/main/LICENSE) file for details.
