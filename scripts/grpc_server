@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+import time
+from argparse import ArgumentParser
+from collections import defaultdict
+from concurrent import futures
+from threading import Lock
+from typing import DefaultDict, Set
+
+import grpc
+
+from easyflake.grpc import sequence_pb2, sequence_pb2_grpc
+from easyflake.log import logger_grpc as logger
+from easyflake.utils import daemonize
+
+
+class SequenceServicer(sequence_pb2_grpc.SequenceServicer):
+    def __init__(self):
+        # bits: sequences
+        self._sequences_by_bits: DefaultDict[int, Set[int]] = defaultdict(set)
+        self._lock = Lock()
+
+    def LiveStream(
+        self, request: sequence_pb2.SequenceRequest, context: grpc.ServicerContext
+    ):
+        bits = request.bits
+
+        logger.debug("generate new sequence.")
+        with self._lock:
+            for i in range(2**bits):
+                if i in self._sequences_by_bits[bits]:
+                    continue
+                self._sequences_by_bits[bits].add(i)
+                sequence = i
+                break
+            else:
+                context.set_code(grpc.StatusCode.OUT_OF_RANGE)
+                context.set_details("sequence is depleted.")
+                return
+
+        yield sequence_pb2.SequenceReply(sequence=sequence)
+
+        # wait unless connection is closed
+        while True:
+            if not context.is_active():
+                with self._lock:
+                    self._sequences_by_bits[bits].remove(sequence)
+                logger.debug("gRPC connection is closed by client.")
+                return
+            time.sleep(10)
+
+
+def serve():
+    parser = ArgumentParser()
+    parser.add_argument("-d", "--daemon", action="store_true")
+    parser.add_argument("--pid-file", type=str)
+
+    args = parser.parse_args()
+
+    is_daemon: bool = args.daemon
+    pid_file: str = args.pid_file
+
+    func = daemonize(_serve, pid_file=pid_file) if is_daemon else _serve
+
+    func()
+
+
+def _serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    sequence_pb2_grpc.add_SequenceServicer_to_server(SequenceServicer(), server)
+    server.add_insecure_port("[::]:50051")
+    server.start()
+
+    try:
+        while True:
+            time.sleep(3600)
+    except KeyboardInterrupt:
+        server.stop(0)
+
+
+if __name__ == "__main__":
+    serve()

@@ -1,6 +1,7 @@
 from logging import getLogger
 
 logger = getLogger("easyflake")
+logger_grpc = getLogger("easyflake.grpc")
 
 
 def _format(prefix, message):

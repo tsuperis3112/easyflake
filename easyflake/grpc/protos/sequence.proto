@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+// The sequence service definition.
+service Sequence {
+  rpc LiveStream (SequenceRequest) returns (stream SequenceReply);
+}
+
+message SequenceRequest {
+  int32 bits = 1;
+}
+
+message SequenceReply {
+  int64 sequence = 1;
+}

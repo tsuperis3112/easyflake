@@ -9,4 +9,4 @@ __all__ = [
     "TimeScale",
 ]
 
-__version__ = metadata.metadata(__package__)
+__version__ = metadata.metadata(__package__)["version"]

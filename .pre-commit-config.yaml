@@ -3,15 +3,21 @@ repos:
     rev:  23.1.0
     hooks:
       - id: black
+        exclude: easyflake/grpc
+        args: [--check]
   - repo: https://github.com/PyCQA/flake8
     rev: 5.0.4
     hooks:
       - id: flake8
+        exclude: easyflake/grpc
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
     hooks:
       - id: isort
+        exclude: easyflake/grpc
+        args: [--check]
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.0.1
     hooks:
       - id: mypy
+        exclude: easyflake/grpc
