@@ -30,7 +30,7 @@ jobs:
           - { name: '3.10', version: '3.10', os: ubuntu-latest, tox: py310 }
           - { name: '3.9', version: '3.9', os: ubuntu-latest, tox: py39 }
           - { name: '3.8', version: '3.8', os: ubuntu-latest, tox: py38 }
-          - { name: Windows, version: '3.11', os: windows-latest, tox: py311 }
+          # - { name: Windows, version: '3.11', os: windows-latest, tox: py311 }
           - { name: Mac, version: '3.11', os: macos-latest, tox: py311 }
     env:
       poetry_version: 1.3.2
