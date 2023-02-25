@@ -1,8 +1,9 @@
-import secrets
-from typing import Callable, Union
+from typing import Union
 
 from easyflake.clock import TimeScale
 from easyflake.log import warn
+from easyflake.node.base import BaseNodeFactory as BaseNodeFactory
+from easyflake.node.random import RandomNodeFactory
 from easyflake.sequence import TimeBasedSequenceGenerator
 
 DEFAULT_EPOCH_TIMESTAMP = 1675859040
@@ -15,7 +16,7 @@ class EasyFlake:
 
     def __init__(
         self,
-        node_id: Union[int, Callable[[int], int]] = secrets.randbits,
+        node_id: Union[int, BaseNodeFactory] = RandomNodeFactory(),
         node_id_bits: int = 8,
         sequence_bits: int = 8,
         epoch: float = DEFAULT_EPOCH_TIMESTAMP,
@@ -37,8 +38,8 @@ class EasyFlake:
         self._node_id_bits = node_id_bits
         self._sequence_bits = sequence_bits
 
-        if callable(node_id):
-            self._node_id = node_id(node_id_bits)
+        if isinstance(node_id, BaseNodeFactory):
+            self._node_id = node_id.get_node_id(node_id_bits)
         else:
             self._node_id = node_id
 

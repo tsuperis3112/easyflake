@@ -7,5 +7,5 @@ exclude =
     .tox
     .venv
     .mypy_cache
-    .pytest_cache
     dist
+    easyflake/grpc
