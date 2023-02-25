@@ -5,7 +5,6 @@ description = "EasyFlake is a Python package for generating 64-bit IDs similar t
 authors = ["Takeru Furuse <tsuperis@gmail.com>"]
 readme = "README.md"
 homepage = "https://github.com/tsuperis/easyflake"
-repository = "https://github.com/tsuperis/easyflake"
 packages = [{include = "easyflake"}]
 keywords = ["snowflake", "sonyflake", "easyflake"]
 classifiers = [
