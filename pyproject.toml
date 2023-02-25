@@ -14,10 +14,15 @@ classifiers = [
     "Topic :: Utilities"
 ]
 
+[tool.poetry.scripts]
+easyflake-cli = "easyflake.__main__:cli"
+
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"
 grpcio = {version = "^1.51.3", optional = true}
 redis = {version = "^4.5.1", optional = true}
+python-daemon = {version = "^2.3.2", optional = true}
+click = "^8.1.3"
 
 [tool.poetry.group.test.dependencies]
 freezegun = "^1.2.2"
@@ -33,20 +38,21 @@ black = "^23.1.0"
 grpcio-tools = "^1.51.3"
 
 [tool.poetry.extras]
-all = ["redis", "grpcio"]
+all = ["redis", "grpcio", "python-daemon"]
+grpc = ["grpcio", "python-daemon"]
 
 [tool.black]
 target-version = ['py38', 'py39', 'py310', 'py311']
 extend-exclude = '''
 /(
     \.pytest_cache
-    | easyflake\/grpc
+    | easyflake\/grpc\/protobuf
 )/
 '''
 
 [tool.isort]
 profile = "black"
-extend_skip_glob = ["easyflake/grpc/*"]
+extend_skip_glob = ["easyflake/grpc/protobuf/*"]
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -54,7 +60,7 @@ show_error_context = true
 pretty = true
 exclude = [
     ".pytest_cache",
-    "grpc"
+    "easyflake/grpc/protobuf"
 ]
 
 [[tool.mypy.overrides]]

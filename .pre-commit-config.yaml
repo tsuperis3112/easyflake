@@ -3,7 +3,7 @@ repos:
     rev:  23.1.0
     hooks:
       - id: black
-        exclude: easyflake/grpc
+        exclude: easyflake/grpc/protobuf
         args: [--check]
   - repo: https://github.com/PyCQA/flake8
     rev: 5.0.4
@@ -14,10 +14,10 @@ repos:
     rev: 5.12.0
     hooks:
       - id: isort
-        exclude: easyflake/grpc
+        exclude: easyflake/grpc/protobuf
         args: [--check]
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.0.1
     hooks:
       - id: mypy
-        exclude: easyflake/grpc
+        exclude: easyflake/grpc/protobuf

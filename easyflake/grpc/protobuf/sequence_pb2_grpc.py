@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from easyflake.grpc import sequence_pb2 as sequence__pb2
+from easyflake.grpc.protobuf import sequence_pb2 as sequence__pb2
 
 
 class SequenceStub(object):

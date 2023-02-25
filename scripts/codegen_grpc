@@ -6,10 +6,18 @@ import re
 from grpc_tools import protoc
 
 input_directory = "./easyflake/grpc/protos"
-output_directory = "./easyflake/grpc"
+output_directory = "./easyflake/grpc/protobuf"
 
 
 def main():
+    # remove exist files
+    for f in os.listdir(output_directory):
+        target = os.path.join(output_directory, f)
+        if target.startswith("_") or os.path.isdir(target):
+            # skip directory hidden files or directories
+            continue
+        os.remove(target)
+
     # codegen
     input_files = os.listdir(input_directory)
     protoc.main(
@@ -23,7 +31,7 @@ def main():
         )
     )
 
-    # patch: relative import
+    # patch: fix to relative import
     output_files = os.listdir(output_directory)
     for f in output_files:
         target = os.path.join(output_directory, f)
@@ -34,7 +42,7 @@ def main():
         with open(target, "r+") as fp:
             content = re.sub(
                 r"^(import \S+_pb2 as \S+_pb2)$",
-                r"from easyflake.grpc \1",
+                r"from easyflake.grpc.protobuf \1",
                 fp.read(),
                 flags=re.MULTILINE,
             )

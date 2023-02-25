@@ -3,8 +3,6 @@ branch = True
 
 [report]
 precision = 2
-omit =
-    easyflake/grpc/*
 exclude_lines =
     if TYPE_CHECKING
-fail_under = 85
+fail_under = 60

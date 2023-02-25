@@ -2,8 +2,8 @@ from typing import Union
 
 from easyflake.clock import TimeScale
 from easyflake.log import warn
-from easyflake.node.factory.base import BaseNodeFactory as BaseNodeFactory
-from easyflake.node.factory.random import RandomNodeFactory
+from easyflake.node.base import BaseNodeFactory as BaseNodeFactory
+from easyflake.node.random import RandomNodeFactory
 from easyflake.sequence import TimeBasedSequenceGenerator
 
 DEFAULT_EPOCH_TIMESTAMP = 1675859040
@@ -39,7 +39,7 @@ class EasyFlake:
         self._sequence_bits = sequence_bits
 
         if isinstance(node_id, BaseNodeFactory):
-            self._node_id = node_id.get_id(node_id_bits)
+            self._node_id = node_id.get_node_id(node_id_bits)
         else:
             self._node_id = node_id
 
