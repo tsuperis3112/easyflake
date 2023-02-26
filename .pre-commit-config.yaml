@@ -6,7 +6,7 @@ repos:
         exclude: easyflake/grpc/protobuf
         args: [--check]
   - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
+    rev: 6.0.0
     hooks:
       - id: flake8
         exclude: easyflake/grpc

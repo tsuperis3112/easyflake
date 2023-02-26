@@ -5,4 +5,8 @@ branch = True
 precision = 2
 exclude_lines =
     if TYPE_CHECKING
+    if __name__ == "__main__"
+    if _descriptor._USE_C_DESCRIPTORS == False
+    raise NotImplemented
+    pass
 fail_under = 60

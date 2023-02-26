@@ -30,42 +30,53 @@ jobs:
           - { name: '3.10', version: '3.10', os: ubuntu-latest, tox: py310 }
           - { name: '3.9', version: '3.9', os: ubuntu-latest, tox: py39 }
           - { name: '3.8', version: '3.8', os: ubuntu-latest, tox: py38 }
-          # - { name: Windows, version: '3.11', os: windows-latest, tox: py311 }
+          - { name: Windows, version: '3.11', os: windows-latest, tox: py311 }
           - { name: Mac, version: '3.11', os: macos-latest, tox: py311 }
     env:
-      poetry_version: 1.3.2
+      POETRY_VERSION: 1.3.2
+      POETRY_VIRTUALENVS_IN_PROJECT: true
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python ${{ matrix.version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.version }}
 
-      - name: Load cached Poetry installation
-        id: cached-poetry
-        uses: actions/cache@v3
-        with:
-          path: ~/.local
-          key: poetry-${{ matrix.name }}-${{ env.poetry_version }}
+      # =========================
+      # Install Dependencies
+      # =========================
 
-      - name: Load tox cache
-        id: cached-tox
+      - name: Get pip cache dir
+        id: pip-cache-dir
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v3
+        with:
+          path: ${{ steps.pip-cache-dir.outputs.dir }}
+          key: pip-${{ matrix.os }}-${{ matrix.version }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: pip-${{ runner.os }}-${{ matrix.version }}-
+
+      - name: Install Dependencies
+        run: |
+          pip install -U pip poetry==${{ env.POETRY_VERSION }}
+          poetry export --only test --without-hashes | grep 'tox==' > requirements.txt
+          pip install -r requirements.txt
+
+      # ==============
+      # Run tests
+      # ==============
+
+      - name: Load cached test environment
         uses: actions/cache@v3
         with:
           path: .tox
-          key: tox-${{ matrix.name }}-${{ hashFiles('poetry.lock') }}-${{ hashFiles('tox.ini') }}
-
-      - name: Install and configure Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.3.2
-          virtualenvs-create: false
-
-      - name: Install dependencies
-        run: pip install tox
+          key: tox-${{ matrix.os }}-${{ matrix.version }}-${{ hashFiles('poetry.lock') }}-${{ hashFiles('tox.ini') }}
+          restore-keys: tox-${{ matrix.os }}-${{ matrix.version }}-
 
       - name: Run tests
-        run: tox -e ${{ matrix.tox }}
+        run: poetry run tox -e ${{ matrix.tox }}
 
       - name: Upload Coverage to Codecov
         if: matrix.name == '3.11'
