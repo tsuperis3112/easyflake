@@ -83,26 +83,3 @@ class TestSequenceServicer(TestCase):
             expected,
             f"Unexpected sequence value: {seq} (expected: {expected})",
         )
-
-
-# class TestServerExecution(TestCase):
-#     def setUp(self):
-#         self.port = 50051
-#         self.pid_file = os.path.join(tempfile.gettempdir(), f"{uuid4().hex}.pid")
-
-#         # サーバーを起動する
-#         serve("localhost", self.port, is_daemon=True, pid_file=self.pid_file)
-
-#         # gRPCチャネルを作成する
-#         self.channel = grpc.insecure_channel(f"localhost:{self.port}")
-#         self.stub = sequence_pb2_grpc.SequenceStub(self.channel)
-
-#     def tearDown(self):
-#         self.channel.close()
-#         with open(self.pid_file, "r") as f:
-#             pid = int(f.read().strip())
-#         os.kill(pid, signal.SIGTERM)
-#         raise ValueError(f"hoge {pid}")
-
-#     def test(self):
-#         self.assertTrue(True)
