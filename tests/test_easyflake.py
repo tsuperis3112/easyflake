@@ -50,9 +50,9 @@ class TestEasyFlake(TestCase):
             clock_mock.side_effect = lambda years: 43 if years == 1 else 44
 
             # Assert that a warning is logged for dangerous lifetime
-            with patch("easyflake.easyflake.warn") as warn_mock:
+            with patch("easyflake.easyflake.warning") as warning_mock:
                 EasyFlake(**common_args)
-            warn_mock.assert_called_once()
+            warning_mock.assert_called_once()
 
     def test_invalid_node_id(self):
         with self.assertRaises(ValueError) as cm:
