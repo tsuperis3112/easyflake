@@ -8,4 +8,4 @@ exclude =
     .venv
     .mypy_cache
     dist
-    easyflake/grpc
+    easyflake/grpc/protobuf

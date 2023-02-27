@@ -1,53 +1,75 @@
 #!/usr/bin/env python3
-
 import os
 import re
+from pathlib import Path
 
+import click
 from grpc_tools import protoc
 
-input_directory = "./easyflake/grpc/protos"
-output_directory = "./easyflake/grpc/protobuf"
+input_pkg = "easyflake.grpc.protos"
+output_pkg = "easyflake.grpc.protobuf"
+
+proj_dir = Path(__file__).parent.parent
+
+
+def _get_relpath(pkg: str):
+    abspath = os.path.join(proj_dir, *pkg.split("."))
+    return os.path.relpath(abspath, ".")
+
+
+input_dir = _get_relpath(input_pkg)
+output_dir = _get_relpath(output_pkg)
+
+
+def _get_files():
+    return [
+        os.path.join(output_dir, f)
+        for f in os.listdir(output_dir)
+        if not f.startswith("_") and os.path.isfile(os.path.join(output_dir, f))
+    ]
 
 
 def main():
     # remove exist files
-    for f in os.listdir(output_directory):
-        target = os.path.join(output_directory, f)
-        if target.startswith("_") or os.path.isdir(target):
-            # skip directory hidden files or directories
-            continue
-        os.remove(target)
+    question = f"Do you want to remove existing files in {output_dir}?"
+    if len(remove_files := _get_files()) > 0 and not click.confirm(question):
+        for file in remove_files:
+            os.remove(file)
+        click.echo("existing files have been removed")
 
     # codegen
-    input_files = os.listdir(input_directory)
+    click.echo("generating protobuf files")
+    input_files = os.listdir(input_dir)
     protoc.main(
         (
             "",
-            f"-I{input_directory}",
-            f"--python_out={output_directory}",
-            f"--pyi_out={output_directory}",
-            f"--grpc_python_out={output_directory}",
+            f"-I{input_dir}",
+            f"--python_out={output_dir}",
+            f"--pyi_out={output_dir}",
+            f"--grpc_python_out={output_dir}",
             *input_files,
         )
     )
+    click.echo("protobuf files have been generated")
 
     # patch: fix to relative import
-    output_files = os.listdir(output_directory)
-    for f in output_files:
-        target = os.path.join(output_directory, f)
-        if target.startswith("_") or os.path.isdir(target):
-            # skip directory hidden files or directories
-            continue
+    for file in _get_files():
+        with open(file, "r+") as fp:
+            origin = fp.read()
+            fp.seek(0)
 
-        with open(target, "r+") as fp:
             content = re.sub(
-                r"^(import \S+_pb2 as \S+_pb2)$",
-                r"from easyflake.grpc.protobuf \1",
-                fp.read(),
+                r"^(import [\w\.]+_pb2\w* as [\w\.]+_pb2\w*)$",
+                rf"from {output_pkg} \1",
+                origin,
                 flags=re.MULTILINE,
             )
-            fp.seek(0)
-            fp.write(content)
+
+            if origin != content:
+                click.echo(f"rewrite {file}")
+                fp.write(content)
+
+    click.echo("finished")
 
 
 if __name__ == "__main__":
