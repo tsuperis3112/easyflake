@@ -3,6 +3,8 @@ branch = True
 
 [report]
 precision = 2
+omit =
+    logging.py
 exclude_lines =
     if TYPE_CHECKING
     if __name__ == "__main__"

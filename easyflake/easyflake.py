@@ -1,7 +1,7 @@
 from typing import Union
 
 from easyflake.clock import TimeScale
-from easyflake.log import warn
+from easyflake.logging import warning
 from easyflake.node.base import BaseNodeFactory as BaseNodeFactory
 from easyflake.node.random import RandomNodeFactory
 from easyflake.sequence import TimeBasedSequenceGenerator
@@ -86,7 +86,7 @@ class EasyFlake:
         if not self._has_sufficient_timestamp_bits(years=1):
             raise ValueError("Unable to count timestamp within a year.")
         if not self._has_sufficient_timestamp_bits(years=3):
-            warn("Unable to count timestamp within 10 years.")
+            warning("Unable to count timestamp within 10 years.")
 
     def _has_sufficient_timestamp_bits(self, **duration):
         timestamp_bits = self._sequence_generator.get_required_bits(**duration)

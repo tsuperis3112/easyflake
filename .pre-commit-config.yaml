@@ -9,7 +9,7 @@ repos:
     rev: 6.0.0
     hooks:
       - id: flake8
-        exclude: easyflake/grpc
+        exclude: easyflake/grpc/protobuf
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
     hooks:
