@@ -1,3 +1,5 @@
+import random
+import signal
 import time
 from collections import defaultdict
 from threading import Lock
@@ -5,6 +7,7 @@ from typing import DefaultDict, Set
 
 import grpc
 
+from easyflake import logging
 from easyflake.exceptions import SequenceOverflowError
 from easyflake.grpc.protobuf import sequence_pb2, sequence_pb2_grpc
 
@@ -34,17 +37,20 @@ class SequenceServicer(sequence_pb2_grpc.SequenceServicer):
     def LiveStream(
         self, request: sequence_pb2.SequenceRequest, context: grpc.ServicerContext
     ):
+        logging.debug("connection established")
+
         try:
             sequence = self.take_sequence(request.bits)
         except SequenceOverflowError as e:
-            context.set_code(grpc.StatusCode.OUT_OF_RANGE)
-            context.set_details(str(e))
+            context.abort(grpc.StatusCode.OUT_OF_RANGE, str(e))
             return
-
-        yield sequence_pb2.SequenceReply(sequence=sequence)
 
         # wait unless connection is closed
         while True:
             if not context.is_active():
+                logging.debug("connection %s is closed", sequence)
                 self.cleanup_sequence(request.bits, sequence)
-            time.sleep(5)
+                break
+
+            yield sequence_pb2.SequenceReply(sequence=sequence)
+            time.sleep(random.random())
