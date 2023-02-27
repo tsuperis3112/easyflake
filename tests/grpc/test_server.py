@@ -8,8 +8,9 @@ from grpc_testing import (
     strict_real_time,
 )
 
-from easyflake.grpc.protobuf import sequence_pb2
-from easyflake.grpc.server.servicers import SequenceOverflowError, SequenceServicer
+from easyflake.exceptions import SequenceOverflowError
+from easyflake.grpc import sequence_pb2
+from easyflake.servers.grpc.sequence import SequenceServicer
 
 service_descriptor = sequence_pb2.DESCRIPTOR.services_by_name["Sequence"]
 method_descriptor = service_descriptor.methods_by_name["LiveStream"]

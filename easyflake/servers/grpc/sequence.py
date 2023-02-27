@@ -1,5 +1,4 @@
 import random
-import signal
 import time
 from collections import defaultdict
 from threading import Lock
@@ -9,7 +8,7 @@ import grpc
 
 from easyflake import logging
 from easyflake.exceptions import SequenceOverflowError
-from easyflake.grpc.protobuf import sequence_pb2, sequence_pb2_grpc
+from easyflake.grpc import sequence_pb2, sequence_pb2_grpc
 
 
 class SequenceServicer(sequence_pb2_grpc.SequenceServicer):

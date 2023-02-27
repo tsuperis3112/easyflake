@@ -1,10 +1,11 @@
+from datetime import timedelta
 from typing import Union
 
 from easyflake.clock import TimeScale
 from easyflake.logging import warning
 from easyflake.node.base import BaseNodeFactory as BaseNodeFactory
 from easyflake.node.random import RandomNodeFactory
-from easyflake.sequence import TimeBasedSequenceGenerator
+from easyflake.providers import TimeBasedSequenceProvider
 
 DEFAULT_EPOCH_TIMESTAMP = 1675859040
 
@@ -43,7 +44,7 @@ class EasyFlake:
         else:
             self._node_id = node_id
 
-        self._sequence_generator = TimeBasedSequenceGenerator(
+        self._sequence_provider = TimeBasedSequenceProvider(
             bits=sequence_bits,
             epoch=epoch,
             time_scale=time_scale,
@@ -53,7 +54,7 @@ class EasyFlake:
 
     def get_id(self):
         """generate next ID by current timestamp"""
-        seq = self._sequence_generator.next()
+        seq = self._sequence_provider.next()
         return (
             (seq.timestamp << (self._sequence_bits + self._node_id_bits))
             | (self._node_id << self._sequence_bits)
@@ -86,9 +87,10 @@ class EasyFlake:
         if not self._has_sufficient_timestamp_bits(years=1):
             raise ValueError("Unable to count timestamp within a year.")
         if not self._has_sufficient_timestamp_bits(years=3):
-            warning("Unable to count timestamp within 10 years.")
+            warning("Unable to count timestamp within 3 years.")
 
-    def _has_sufficient_timestamp_bits(self, **duration):
-        timestamp_bits = self._sequence_generator.get_required_bits(**duration)
+    def _has_sufficient_timestamp_bits(self, years: int):
+        delta = timedelta(days=365 * years)
+        timestamp_bits = self._sequence_provider.get_required_bits(delta)
         bits = timestamp_bits + self._node_id_bits + self._sequence_bits
         return bits < self.id_bits

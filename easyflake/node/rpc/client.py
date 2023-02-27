@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 import grpc
 from grpc import StatusCode
 
-from easyflake.grpc.protobuf.sequence_pb2 import SequenceReply, SequenceRequest
-from easyflake.grpc.protobuf.sequence_pb2_grpc import SequenceStub
+from easyflake.grpc.sequence_pb2 import SequenceReply, SequenceRequest
+from easyflake.grpc.sequence_pb2_grpc import SequenceStub
 
 
 class ListenStatus(IntEnum):

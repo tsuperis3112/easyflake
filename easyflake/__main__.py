@@ -68,7 +68,7 @@ def grpc(host: str, port: int, pid_file: Optional[str]):
     """
     # check if the command is available
     try:
-        from easyflake.grpc.server import serve as grpc_serve
+        from easyflake.servers.grpc import serve as grpc_serve
     except ImportError:
         msg = (
             "Failed to import some modules. "

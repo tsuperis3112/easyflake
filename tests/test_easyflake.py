@@ -1,10 +1,11 @@
+from datetime import timedelta
 from unittest import TestCase
 from unittest.mock import patch
 
 from freezegun import freeze_time
 
 from easyflake import EasyFlake, TimeScale
-from easyflake.sequence import TimeBasedSequence
+from easyflake.providers import TimeBasedSequence
 
 
 class TestEasyFlake(TestCase):
@@ -16,7 +17,7 @@ class TestEasyFlake(TestCase):
 
         ef = EasyFlake(node_id=node_id, node_id_bits=10, sequence_bits=9)
         with patch(
-            "easyflake.sequence.TimeBasedSequenceGenerator.next", return_value=sequence
+            "easyflake.providers.TimeBasedSequenceProvider.next", return_value=sequence
         ):
             expected_id = timestamp << 19 | node_id << 9 | sequence.value
             actual_id = ef.get_id()
@@ -31,10 +32,16 @@ class TestEasyFlake(TestCase):
         }
 
         # not dangerous lifetime
-        with patch("easyflake.clock.ScaledClock.bits_for_duration", return_value=43):
+        with patch(
+            "easyflake.easyflake.TimeBasedSequenceProvider.get_required_bits",
+            return_value=43,
+        ):
             EasyFlake(**common_args)
 
-        with patch("easyflake.clock.ScaledClock.bits_for_duration", return_value=44):
+        with patch(
+            "easyflake.easyflake.TimeBasedSequenceProvider.get_required_bits",
+            return_value=44,
+        ):
             msg = "The ValueError should be raised for dangerous lifetime."
             with self.assertRaises(ValueError, msg=msg):
                 EasyFlake(**common_args)
@@ -46,9 +53,10 @@ class TestEasyFlake(TestCase):
             "time_scale": TimeScale.SECOND,
         }
 
-        with patch("easyflake.clock.ScaledClock.bits_for_duration") as clock_mock:
-            clock_mock.side_effect = lambda years: 43 if years == 1 else 44
-
+        with patch(
+            "easyflake.easyflake.TimeBasedSequenceProvider.get_required_bits",
+            side_effect=lambda d: 43 if d <= timedelta(days=365) else 44,
+        ):
             # Assert that a warning is logged for dangerous lifetime
             with patch("easyflake.easyflake.warning") as warning_mock:
                 EasyFlake(**common_args)

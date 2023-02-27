@@ -1,5 +1,7 @@
+import math
 import threading
 from dataclasses import dataclass
+from datetime import timedelta
 from multiprocessing import Value
 from multiprocessing.sharedctypes import Synchronized
 from typing import TYPE_CHECKING
@@ -31,7 +33,7 @@ class TimeBasedSequence:
     value: int
 
 
-class TimeBasedSequenceGenerator:
+class TimeBasedSequenceProvider:
     """A class for generating a sequence of numbers based on a time scale."""
 
     def __init__(
@@ -66,16 +68,15 @@ class TimeBasedSequenceGenerator:
         )
         self._thread_lock = threading.Lock() if use_multithread else _DummyLock()
 
-    def get_required_bits(self, **duration):
+    def get_required_bits(self, delta: timedelta):
         """
         Get the number of bits to represent given years, days, hours, minutes, seconds.
         """
-        return self._clock.bits_for_duration(**duration)
+        return math.floor(math.log(self._clock.future(delta), 2)) + 1
 
     def _attach_timestamp_to_value(self, value: int):
         current = self._clock.current()
-        timestamp = self._clock.get_elapsed_time(current)
-        return timestamp, (current << self._bits) | value
+        return current, (current << self._bits) | value
 
     def _detach_timestamp_from_value(self, value: int) -> int:
         return value & self._sequence_mask

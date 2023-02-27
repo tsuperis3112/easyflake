@@ -6,12 +6,14 @@ from concurrent import futures
 from typing import Optional
 
 import grpc
+from grpc_health.v1 import health_pb2_grpc
+from grpc_health.v1.health import HealthServicer
 from lockfile.pidlockfile import PIDLockFile
 
 from easyflake import config, logging
-from easyflake.grpc.protobuf import sequence_pb2_grpc
+from easyflake.grpc import sequence_pb2_grpc
 
-from .servicers import SequenceServicer
+from .sequence import SequenceServicer
 
 
 def serve(host: str, port: int, *, pid_file: Optional[str] = None):
@@ -47,15 +49,15 @@ def serve(host: str, port: int, *, pid_file: Optional[str] = None):
 def _serve(endpoint: str):
     logging.success(f"start gRPC server => {endpoint}")
 
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     sequence_pb2_grpc.add_SequenceServicer_to_server(SequenceServicer(), server)
-
-    server.add_insecure_port(endpoint)
+    health_pb2_grpc.add_HealthServicer_to_server(HealthServicer(), server)
 
     def signal_handler(sig, frame):
         logging.info("stopping server...")
         server.stop(1)
 
+    server.add_insecure_port(endpoint)
     server.start()
 
     signal.signal(signal.SIGINT, signal_handler)
