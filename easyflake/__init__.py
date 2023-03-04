@@ -1,12 +1,12 @@
 from importlib import metadata
 
-from .clock import TimeScale
+from .clock import Scale
 from .easyflake import EasyFlake
 
 __all__ = [
     "__version__",
     "EasyFlake",
-    "TimeScale",
+    "Scale",
 ]
 
 __version__ = metadata.metadata(__package__)["version"]

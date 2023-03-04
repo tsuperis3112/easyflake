@@ -1,0 +1,15 @@
+root = True
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = True
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = True
+
+[*.{py,pyi}]
+indent_size = 4
+
+[Makefile]
+indent_style = tab

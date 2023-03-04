@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import os
 import re
 from pathlib import Path
@@ -6,8 +7,8 @@ from pathlib import Path
 import click
 from grpc_tools import protoc
 
-input_pkg = "easyflake.grpc.protos"
-output_pkg = "easyflake.grpc.protobuf"
+input_pkg = "resources.protos"
+output_pkg = "easyflake.grpc"
 
 proj_dir = Path(__file__).parent.parent
 
@@ -21,25 +22,22 @@ input_dir = _get_relpath(input_pkg)
 output_dir = _get_relpath(output_pkg)
 
 
-def _get_files():
-    return [
-        os.path.join(output_dir, f)
-        for f in os.listdir(output_dir)
-        if not f.startswith("_") and os.path.isfile(os.path.join(output_dir, f))
-    ]
-
-
 def main():
+    click.echo(f"input: {input_dir}")
+    input_files = _get_proto_files()
+
+    click.echo(f"existing: {output_dir}")
+    existing_files = _get_generated_file()
+
     # remove exist files
     question = f"Do you want to remove existing files in {output_dir}?"
-    if len(remove_files := _get_files()) > 0 and not click.confirm(question):
-        for file in remove_files:
+    if len(existing_files) > 0 and not click.confirm(question):
+        for file in existing_files:
             os.remove(file)
         click.echo("existing files have been removed")
 
     # codegen
     click.echo("generating protobuf files")
-    input_files = os.listdir(input_dir)
     protoc.main(
         (
             "",
@@ -53,7 +51,7 @@ def main():
     click.echo("protobuf files have been generated")
 
     # patch: fix to relative import
-    for file in _get_files():
+    for file in _get_generated_file():
         with open(file, "r+") as fp:
             origin = fp.read()
             fp.seek(0)
@@ -70,6 +68,32 @@ def main():
                 fp.write(content)
 
     click.echo("finished")
+
+
+def _is_generated_file(filename: str):
+    if not os.path.isfile(os.path.join(output_dir, filename)):
+        return False
+    if filename.startswith("_"):
+        return False
+    return bool(re.search(r"_pb2(?:_grpc)?\.pyi?$", filename))
+
+
+def _is_proto_file(file: str):
+    return os.path.isfile(os.path.join(input_dir, file)) or file.endswith(".proto")
+
+
+def _get_files(dir, func):
+    files = [os.path.join(dir, f) for f in os.listdir(dir) if func(f)]
+    click.echo("\n".join([f"\t* {f}" for f in files]))
+    return files
+
+
+def _get_generated_file():
+    return _get_files(output_dir, _is_generated_file)
+
+
+def _get_proto_files():
+    return _get_files(input_dir, _is_proto_file)
 
 
 if __name__ == "__main__":

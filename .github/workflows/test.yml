@@ -2,19 +2,11 @@ name: Test
 
 on:
   pull_request:
-    paths:
-      - "pyproject.toml"
-      - "poetry.lock"
-      - 'tox.ini'
-      - '**.py'
+    branches:
+      - main
   push:
     branches:
       - main
-    paths:
-      - "pyproject.toml"
-      - "poetry.lock"
-      - 'tox.ini'
-      - '**.py'
 
 jobs:
   test:
@@ -55,13 +47,13 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ${{ steps.pip-cache-dir.outputs.dir }}
-          key: pip-${{ matrix.os }}-${{ matrix.version }}-${{ hashFiles('poetry.lock') }}
-          restore-keys: pip-${{ runner.os }}-${{ matrix.version }}-
+          key: pip-${{ runner.os }}-${{ env.POETRY_VERSION }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: pip-${{ runner.os }}-${{ env.POETRY_VERSION }}-
 
       - name: Install Dependencies
         run: |
           pip install -U pip poetry==${{ env.POETRY_VERSION }}
-          poetry export --only test --without-hashes | grep 'tox==' > requirements.txt
+          poetry export --only dev --without-hashes | grep 'tox==' > requirements.txt
           pip install -r requirements.txt
 
       # ==============
@@ -72,11 +64,11 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .tox
-          key: tox-${{ matrix.os }}-${{ matrix.version }}-${{ hashFiles('poetry.lock') }}-${{ hashFiles('tox.ini') }}
-          restore-keys: tox-${{ matrix.os }}-${{ matrix.version }}-
+          key: tox-${{ runner.os }}-${{ env.POETRY_VERSION }}-${{ hashFiles('poetry.lock') }}-${{ hashFiles('tox.ini') }}
+          restore-keys: tox-${{ runner.os }}-${{ env.POETRY_VERSION }}-
 
       - name: Run tests
-        run: poetry run tox -e ${{ matrix.tox }}
+        run: tox -e ${{ matrix.tox }}
 
       - name: Upload Coverage to Codecov
         if: matrix.name == '3.11'

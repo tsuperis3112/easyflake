@@ -1,0 +1,48 @@
+name: Publish Package
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: 3.8
+      POETRY_VERSION: 1.3.2
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # =========================
+      # Install Dependencies
+      # =========================
+
+      - name: Get pip cache dir
+        id: pip-cache-dir
+        run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v3
+        with:
+          path: ${{ steps.pip-cache-dir.outputs.dir }}
+          key: pip-${{ runner.os }}-${{ env.POETRY_VERSION }}-${{ hashFiles('poetry.lock') }}
+          restore-keys: pip-${{ runner.os }}-${{ env.POETRY_VERSION }}-
+
+      - name: Install Dependencies
+        run: pip install -U pip poetry==${{ env.POETRY_VERSION }}
+
+      # ==============================
+      # Build and Publish Package
+      # ==============================
+
+      - name: Publish Package
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}
+        run: |
+          poetry build
+          poetry publish

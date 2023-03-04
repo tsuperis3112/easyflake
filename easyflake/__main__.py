@@ -1,13 +1,14 @@
 import functools
-import sys
 from typing import Callable, Optional
 
 import click
 
-from easyflake import config, logging
+from easyflake import config
+from easyflake.node.grpc import NodeIdPool
 
 
 @click.group()
+@click.version_option()
 def cli():
     pass
 
@@ -38,12 +39,9 @@ def global_options(
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         # change global config
-        if kwargs.pop("DEBUG", False):
-            config.DEBUG_MODE = True
-        if not kwargs.pop("NO_COLOR", False):
-            config.COLOR_MODE = True
-        if kwargs.pop("DAEMON", False):
-            config.DAEMON_MODE = True
+        config.DEBUG_MODE = kwargs.pop("DEBUG", False)
+        config.COLOR_MODE = not kwargs.pop("NO_COLOR", False)
+        config.DAEMON_MODE = kwargs.pop("DAEMON", False)
         return func(*args, **kwargs)
 
     # set options
@@ -67,17 +65,8 @@ def grpc(host: str, port: int, pid_file: Optional[str]):
     run gRPC server to get sequential node IDs.
     """
     # check if the command is available
-    try:
-        from easyflake.grpc.server import serve as grpc_serve
-    except ImportError:
-        msg = (
-            "Failed to import some modules. "
-            "If you want to run the gRPC server, execute `pip install easyflake[grpc]`"
-        )
-        logging.error(msg)
-        sys.exit(1)
 
-    grpc_serve(host, port, pid_file=pid_file)
+    NodeIdPool.serve(host, port, pid_file=pid_file)
 
 
 if __name__ == "__main__":

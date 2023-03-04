@@ -1,3 +1,3 @@
 DAEMON_MODE = False
 DEBUG_MODE = False
-COLOR_MODE = False
+COLOR_MODE = True

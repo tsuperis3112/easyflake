@@ -1,77 +1,45 @@
-import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
-from freezegun import freeze_time
+import pytest
 
-from easyflake.sequence import ScaledClock
+from easyflake.clock import ClockScaler, Scale
 
-
-def test_current():
-    with freeze_time("2020-01-01 00:00:00"):
-        clock = ScaledClock(2, datetime(2020, 1, 1).timestamp())
-        # Set the current time to 2020-01-01 00:01:01.12345
-        # 1 minutes 1.12 seconds
-        with freeze_time("2020-01-01 00:01:01.12345"):
-            now = clock.current()
-    assert now == 61_12, "Current time on the clock is not equal to 00:01:01.12"
+base_datetime = datetime(1970, 1, 1, 0, 1, 1, 234567, tzinfo=timezone.utc)
+diff_from_epoch = 61_23
 
 
-def test_get_elapsed_timestamp():
-    clock = ScaledClock(2, 1)
-    with freeze_time("2023-01-01 00:00:00.123"):
-        expected = int((time.time() - 1) * 100)
-        now = clock.current()
-    assert (
-        clock.get_elapsed_time(now) == expected
-    ), "Elapsed time from 1970-01-01 00:00:01 to 2023-01-01 00:00:00.123"
+@pytest.fixture
+def time_mock(mocker):
+    mocker.patch("time.time", return_value=base_datetime.timestamp())
 
 
-def test_bits_for_duration_hours():
+def test_current(time_mock):
+    clock = ClockScaler(2, 0)
+    # Set the current time to 2020-01-01 00:01:01.12345
+    # 1 minutes 1.12 seconds
+    now = clock.current()
+    assert now == diff_from_epoch, "Current time on the clock is not equal to 00:01:01.12"
+
+
+def test_future(time_mock):
     # Create a clock with scale 0 and epoch at the current time
-    with freeze_time("2020-01-01 00:00:00"):
-        clock = ScaledClock(0, epoch=time.time())
+    clock = ClockScaler(2, 0)
 
-        # Calculate the expected number of bits required to represent 1 hour duration
-        duration = 60**2
-        expected = len(bin(duration)[2:])
+    # Calculate the expected number of bits required to represent 1 hour duration
+    delta = timedelta(hours=1, microseconds=123456)
+    expected = 3600_12 + diff_from_epoch
 
-        # Get the number of bits required to represent 1 hour duration on the clock,
-        # and check that it is equal to the expected value
-        result = clock.bits_for_duration(hours=1)
-        assert (
-            result == expected
-        ), "Bits required for 1 hour duration is not equal to the expected value"
-
-
-def test_bits_for_duration_days():
-    # Create a clock with scale 1 and epoch at the current time
-    with freeze_time("2020-01-01 00:00:00"):
-        clock = ScaledClock(1, epoch=time.time())
-
-        # Calculate the expected number of bits required to represent 1 day duration
-        duration = 60**2 * 24
-        expected = len(bin(duration * 10)[2:])
-
-        # Get the number of bits required to represent 1 day duration on the clock,
-        # and check that it is equal to the expected value
-        result = clock.bits_for_duration(days=1)
-        assert (
-            result == expected
-        ), "Bits required for 1 day duration is not equal to the expected value"
+    # Get the number of bits required to represent 1 hour duration on the clock,
+    # and check that it is equal to the expected value
+    result = clock.future(delta)
+    assert (
+        result == expected
+    ), "Bits required for 1 hour duration is not equal to the expected value"
 
 
-def test_bits_for_duration_years():
-    # Create a clock with scale 1 and epoch at the current time
-    with freeze_time("2020-01-01 00:00:00"):
-        clock = ScaledClock(2, epoch=time.time())
-
-        # Calculate the expected number of bits required to represent 1 year duration
-        duration = 60**2 * 24 * 365
-        expected = len(bin(duration * 100)[2:])
-
-        # Get the number of bits required to represent 1 year duration on the clock,
-        # and check that it is equal to the expected value
-        result = clock.bits_for_duration(years=1)
-        assert (
-            result == expected
-        ), "Bits required for 1 year duration is not equal to the expected value"
+def test_sleep():
+    with patch("time.sleep") as sleep_mock:
+        clock = ClockScaler(Scale.MILLI, 0)
+        clock.sleep(0, 3)
+        sleep_mock.assert_called_once_with(0.003)
