@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import time
 from dataclasses import dataclass, field
 from typing import List, Optional
@@ -16,7 +17,10 @@ LIFESPAN = 10
 CYCLE = LIFESPAN / 2
 
 
-@dataclass(kw_only=True)
+dataclass_kwargs = {"kw_only": True} if sys.version_info >= (3, 10) else {}
+
+
+@dataclass(**dataclass_kwargs)
 class LineStruct:
     bits: int
     sequence: int

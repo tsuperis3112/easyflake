@@ -1,3 +1,4 @@
+import sys
 from unittest.mock import MagicMock
 
 import grpc
@@ -5,6 +6,11 @@ import pytest
 
 from easyflake.grpc.sequence_pb2 import SequenceReply, SequenceRequest
 from easyflake.node.grpc import NodeIdPool, SequenceServicer
+
+if sys.version_info < (3, 10):
+
+    async def anext(ait):
+        return await ait.__anext__()
 
 
 @pytest.fixture

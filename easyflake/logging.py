@@ -57,5 +57,5 @@ def exception(e: Exception):
     if config.DAEMON_MODE:
         logger.exception(e)
     else:
-        lines = traceback.format_exception(e)
+        lines = traceback.format_exception(type(e), value=e, tb=e.__traceback__)
         error(os.linesep.join(lines))
