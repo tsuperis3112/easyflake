@@ -1,11 +1,10 @@
 from datetime import timedelta
 from typing import Union
 
-from easyflake.clock import TimeScale
+from easyflake.clock import Scale
 from easyflake.logging import warning
-from easyflake.node.base import BaseNodeFactory as BaseNodeFactory
-from easyflake.node.random import RandomNodeFactory
-from easyflake.providers import TimeBasedSequenceProvider
+from easyflake.node import BaseNodeIdPool
+from easyflake.sequence import TimeSequenceProvider
 
 DEFAULT_EPOCH_TIMESTAMP = 1675859040
 
@@ -17,34 +16,34 @@ class EasyFlake:
 
     def __init__(
         self,
-        node_id: Union[int, BaseNodeFactory] = RandomNodeFactory(),
+        node_id: Union[int, BaseNodeIdPool],
         node_id_bits: int = 8,
         sequence_bits: int = 8,
         epoch: float = DEFAULT_EPOCH_TIMESTAMP,
-        time_scale: int = TimeScale.MILLI,
+        time_scale: int = Scale.MILLI,
         **kwargs,
     ):
         """
         Class for generating 64-bit IDs similar to Snowflake or Sonyflake.
 
         Args:
-            node_id (int): node ID of execution environment. Default to random
+            node_id (int, NodeIdPool): node ID of execution environment.
             node_id_bits (int): maximum number of bits in node ID part.
             sequence_bits (int): maximum number of bits in sequence ID part.
-            epoch (float): Timestamp that is used as a reference when
-                                     generating bits of timestamp section.
-                                     Defaults to 2023-02-08T12:24:00Z.
+            epoch (float): Timestamp that is used as a reference when generating bits of timestamp
+                           section.
+                           Defaults to 2023-02-08T12:24:00Z.
             time_scale (int): number of decimal places in timestamp.
         """
         self._node_id_bits = node_id_bits
         self._sequence_bits = sequence_bits
 
-        if isinstance(node_id, BaseNodeFactory):
-            self._node_id = node_id.get_node_id(node_id_bits)
+        if isinstance(node_id, BaseNodeIdPool):
+            self._node_id_provider = node_id.get
         else:
-            self._node_id = node_id
+            self._node_id_provider = lambda: node_id  # type: ignore
 
-        self._sequence_provider = TimeBasedSequenceProvider(
+        self._sequence_provider = TimeSequenceProvider(
             bits=sequence_bits,
             epoch=epoch,
             time_scale=time_scale,
@@ -52,12 +51,16 @@ class EasyFlake:
         )
         self._validate()
 
+    @property
+    def node_id(self):
+        return self._node_id_provider()
+
     def get_id(self):
         """generate next ID by current timestamp"""
         seq = self._sequence_provider.next()
         return (
             (seq.timestamp << (self._sequence_bits + self._node_id_bits))
-            | (self._node_id << self._sequence_bits)
+            | (self.node_id << self._sequence_bits)
             | seq.value
         )
 
@@ -72,10 +75,10 @@ class EasyFlake:
             raise ValueError("node_id_bits is required to be >0")
 
         max_node_id = (1 << self._node_id_bits) - 1
-        if not 0 <= self._node_id <= max_node_id:
+        if not 0 <= self.node_id <= max_node_id:
             raise ValueError(
                 f"node_id is required to be >=0 and <={max_node_id}, "
-                f"but {self._node_id} is given."
+                f"but {self.node_id} is given."
             )
 
     def _validate_sequence_bits(self):

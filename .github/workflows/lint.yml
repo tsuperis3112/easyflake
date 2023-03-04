@@ -5,12 +5,6 @@ on:
     paths:
       - ".pre-commit-config.yaml"
       - '**.py'
-  push:
-    branches:
-      - main
-    paths:
-      - ".pre-commit-config.yaml"
-      - '**.py'
 
 jobs:
   lint:

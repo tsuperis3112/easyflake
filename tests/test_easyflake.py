@@ -1,71 +1,75 @@
 from datetime import timedelta
-from unittest import TestCase
 from unittest.mock import patch
 
-from freezegun import freeze_time
+import pytest
 
-from easyflake import EasyFlake, TimeScale
-from easyflake.providers import TimeBasedSequence
+from easyflake import EasyFlake, Scale
+from easyflake.sequence import TimeSequence
 
 
-class TestEasyFlake(TestCase):
-    @freeze_time("2022-03-01")
-    def test_get_id(self):
-        timestamp = 123
-        node_id = 456
-        sequence = TimeBasedSequence(timestamp=timestamp, value=789)
+def test_get_id():
+    timestamp = 123
+    node_id = 456
+    sequence = TimeSequence(timestamp=timestamp, value=789)
 
-        ef = EasyFlake(node_id=node_id, node_id_bits=10, sequence_bits=9)
-        with patch(
-            "easyflake.providers.TimeBasedSequenceProvider.next", return_value=sequence
-        ):
-            expected_id = timestamp << 19 | node_id << 9 | sequence.value
-            actual_id = ef.get_id()
-            msg = f"Generated ID {actual_id} is not equal to expected ID {expected_id}."
-            self.assertEqual(actual_id, expected_id, msg)
+    ef = EasyFlake(node_id=node_id, node_id_bits=10, sequence_bits=9)
+    with patch(
+        "easyflake.sequence.TimeSequenceProvider.next",
+        return_value=sequence,
+    ):
+        expected_id = timestamp << 19 | node_id << 9 | sequence.value
+        actual_id = ef.get_id()
+        msg = f"Generated ID {actual_id} is not equal to expected ID {expected_id}."
+        assert actual_id == expected_id, msg
 
-    def test_instance_critical_lifetime(self):
-        common_args = {
-            "node_id_bits": 10,
-            "sequence_bits": 10,
-            "time_scale": TimeScale.SECOND,
-        }
 
-        # not dangerous lifetime
-        with patch(
-            "easyflake.easyflake.TimeBasedSequenceProvider.get_required_bits",
-            return_value=43,
-        ):
-            EasyFlake(**common_args)
+def test_instance_critical_lifetime(mocker):
+    common_args = {
+        "node_id": 0,
+        "node_id_bits": 10,
+        "sequence_bits": 10,
+        "time_scale": Scale.SECOND,
+    }
 
-        with patch(
-            "easyflake.easyflake.TimeBasedSequenceProvider.get_required_bits",
-            return_value=44,
-        ):
-            msg = "The ValueError should be raised for dangerous lifetime."
-            with self.assertRaises(ValueError, msg=msg):
-                EasyFlake(**common_args)
+    # not dangerous lifetime
+    mocker.patch(
+        "easyflake.sequence.TimeSequenceProvider.get_required_bits",
+        return_value=43,
+    )
+    EasyFlake(**common_args)
 
-    def test_instance_dangerous_lifetime(self):
-        common_args = {
-            "node_id_bits": 10,
-            "sequence_bits": 10,
-            "time_scale": TimeScale.SECOND,
-        }
+    mocker.patch(
+        "easyflake.sequence.TimeSequenceProvider.get_required_bits",
+        return_value=44,
+    )
+    # The ValueError should be raised for dangerous lifetime.
+    with pytest.raises(ValueError):
+        EasyFlake(**common_args)
 
-        with patch(
-            "easyflake.easyflake.TimeBasedSequenceProvider.get_required_bits",
-            side_effect=lambda d: 43 if d <= timedelta(days=365) else 44,
-        ):
-            # Assert that a warning is logged for dangerous lifetime
-            with patch("easyflake.easyflake.warning") as warning_mock:
-                EasyFlake(**common_args)
-            warning_mock.assert_called_once()
 
-    def test_invalid_node_id(self):
-        with self.assertRaises(ValueError) as cm:
-            EasyFlake(node_id=1024, node_id_bits=10)
+def test_instance_dangerous_lifetime(mocker):
+    common_args = {
+        "node_id": 0,
+        "node_id_bits": 10,
+        "sequence_bits": 10,
+        "time_scale": Scale.SECOND,
+    }
 
-        msg = "The error message should indicate that the node_id is invalid."
-        self.assertIn("node_id", str(cm.exception), msg)
-        self.assertIn("<=1023", str(cm.exception), "The error reason is not valid.")
+    mocker.patch(
+        "easyflake.easyflake.TimeSequenceProvider.get_required_bits",
+        side_effect=lambda d: 43 if d <= timedelta(days=365) else 44,
+    )
+    # Assert that a warning is logged for dangerous lifetime
+    warning_mock = mocker.patch("easyflake.easyflake.warning")
+
+    EasyFlake(**common_args)
+    warning_mock.assert_called_once()
+
+
+def test_invalid_node_id():
+    with pytest.raises(ValueError) as exc_info:
+        EasyFlake(node_id=1024, node_id_bits=10)
+
+    msg = "The error message should indicate that the node_id is invalid."
+    assert "node_id" in str(exc_info), msg
+    assert "<=1023" in str(exc_info), "The error reason is not valid."

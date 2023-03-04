@@ -1,4 +1,6 @@
 import logging
+import os
+import traceback
 from typing import Optional
 
 import click
@@ -19,13 +21,13 @@ def _console(loglevel: int, message: str, *args, color: Optional[str] = None):
 def debug(message: str, *args):
     if config.DAEMON_MODE:
         logger.debug(message, *args)
-    else:
+    elif config.DEBUG_MODE:
         _console(logging.DEBUG, message, *args)
 
 
 def info(message: str, *args):
     if config.DAEMON_MODE:
-        logger.debug(message, *args)
+        logger.info(message, *args)
     else:
         _console(logging.INFO, message, *args)
 
@@ -49,3 +51,11 @@ def error(message: str, *args):
         logger.error(message)
     else:
         _console(logging.ERROR, message, *args, color="red")
+
+
+def exception(e: Exception):
+    if config.DAEMON_MODE:
+        logger.exception(e)
+    else:
+        lines = traceback.format_exception(e)
+        error(os.linesep.join(lines))

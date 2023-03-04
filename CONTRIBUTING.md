@@ -25,7 +25,7 @@ Before creating a pull request, please make sure your changes meet the following
 easyflake uses [Poetry](https://python-poetry.org/) for package management. You can install dependencies using the following command:
 
 ```bash
-poetry install -E all
+poetry install --sync
 ```
 
 ### Testing
