@@ -89,8 +89,11 @@ class NodeIdPool(BaseNodeIdPool):
             await server.stop(1)
 
         loop = get_running_loop()
-        for sig in signals:
-            loop.add_signal_handler(sig, lambda: asyncio.create_task(signal_handler()))
+        try:
+            for sig in signals:
+                loop.add_signal_handler(sig, lambda: asyncio.create_task(signal_handler()))
+        except NotImplementedError:  # for Windows
+            pass
 
     @classmethod
     async def _serve(cls, endpoint: str):
