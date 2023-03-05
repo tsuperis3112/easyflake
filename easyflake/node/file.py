@@ -1,4 +1,5 @@
 import os
+import random
 import re
 import sys
 import time
@@ -87,5 +88,6 @@ class NodeIdPool(BaseNodeIdPool):
 
                 with open(self.endpoint, "w+") as f:
                     f.write(os.linesep.join(new_lines))
-
                 yield sequence
+
+            time.sleep(random.random())

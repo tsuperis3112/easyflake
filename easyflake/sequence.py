@@ -18,24 +18,6 @@ __all__ = [
 LOCK_TO = 2
 
 
-@dataclass
-class _DummyLock:
-    """A dummy lock class that does nothing."""
-
-    value: int
-
-    def __enter__(self):
-        """dummy enter"""
-        pass
-
-    def __exit__(self, *args, **kwargs):
-        """dummy exit"""
-        pass
-
-    def get_lock(self):
-        return self
-
-
 @dataclass(frozen=True)
 class TimeSequence:
     timestamp: int
@@ -45,20 +27,13 @@ class TimeSequence:
 class TimeSequenceProvider:
     """A class for generating a sequence of numbers based on a time scale."""
 
-    def __init__(
-        self,
-        bits: int,
-        epoch: float,
-        time_scale: int,
-        use_concurrency=True,
-    ):
+    def __init__(self, bits: int, epoch: float, time_scale: int):
         """
         Args:
             bits (int): The bits of sequential ID.
             epoch (float): The base datetime to calculate the timestamp
             time_scale (int): The scale of the timestamp to use. The ID sequence will
                               be incremented at intervals determined by the scale.
-            use_concurrency (bool): Whether to use a multi-process lock.
         """
         self._bits = bits + 1
 
@@ -70,7 +45,7 @@ class TimeSequenceProvider:
         _, val = self._attach_timestamp_to_value(0)
         if TYPE_CHECKING:
             self._shared: Synchronized[int]
-        self._shared = Value("Q", val) if use_concurrency else _DummyLock()  # type: ignore
+        self._shared = Value("Q", val)  # type: ignore
 
     def get_required_bits(self, delta: timedelta):
         """
@@ -117,16 +92,7 @@ class TimeSequenceProvider:
 
 
 class SimpleSequencePool:
-    """_summary_
-
-    >>> bits = 4
-    >>> pool = SimpleSequencePool()
-    >>> i = pool.pop(bits)
-    >>> i == 0
-    True
-    """
-
-    def __init__(self) -> None:
+    def __init__(self):
         self._pool: Dict[int, Set[int]] = {}
 
     def _init(self, bits: int):
@@ -145,6 +111,6 @@ class SimpleSequencePool:
         self._pool[bits] = self._pool[bits] - {seq}
 
     def push(self, bits: int, seq: int):
-        if seq >= (1 << bits):
+        if not 0 <= seq < 2**bits:
             raise ValueError(f"sequence {seq} is too large on {bits} bits")
         self._pool[bits].add(seq)

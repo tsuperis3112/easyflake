@@ -72,7 +72,7 @@ class EasyFlake:
 
     def _validate_node_id(self):
         if self._node_id_bits < 1:
-            raise ValueError("node_id_bits is required to be >0")
+            raise ValueError("node_id_bits is required to be >0")  # pragma: nocover
 
         max_node_id = (1 << self._node_id_bits) - 1
         if not 0 <= self.node_id <= max_node_id:
@@ -83,7 +83,7 @@ class EasyFlake:
 
     def _validate_sequence_bits(self):
         if self._sequence_bits < 1:
-            raise ValueError("sequence_bits is required to be >0")
+            raise ValueError("sequence_bits is required to be >0")  # pragma: nocover
 
     def _validate_id_length(self):
         # Check sufficient node_id bits

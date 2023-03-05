@@ -2,7 +2,7 @@ import abc
 import multiprocessing
 import random
 from multiprocessing.sharedctypes import Synchronized
-from typing import TYPE_CHECKING, Iterator, Optional
+from typing import TYPE_CHECKING, Iterator
 
 TIMEOUT = 3
 INVALID_VALUE = -255
@@ -32,7 +32,7 @@ class NodeIdPool(abc.ABC):
         self.stop()
 
     @abc.abstractmethod
-    def listen(self) -> Iterator[Optional[int]]:
+    def listen(self) -> Iterator[int]:
         """
         Listen for allocated node ID.
         Set status and node_id.
@@ -71,7 +71,7 @@ class NodeIdPool(abc.ABC):
             self._value_event.clear()
             self._running_event.clear()
 
-    def get(self):
+    def get(self) -> int:
         self.start()
         if self._value_event.wait(timeout=self.timeout):
             if (node_id := self._node_id) == INVALID_VALUE:
@@ -79,10 +79,10 @@ class NodeIdPool(abc.ABC):
             return node_id
         raise TimeoutError("cannot get sequence value from server")
 
-    def _set_node_id(self, node_id: int):
-        self._shared_node_id.value = node_id
-
-    def _get_node_id(self):
+    @property
+    def _node_id(self) -> int:
         return self._shared_node_id.value
 
-    _node_id = property(_get_node_id, _set_node_id)
+    @_node_id.setter
+    def _node_id(self, node_id: int):
+        self._shared_node_id.value = node_id

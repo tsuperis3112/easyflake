@@ -14,6 +14,16 @@ def time_mock(mocker):
     mocker.patch("time.time", return_value=base_datetime.timestamp())
 
 
+def test_invalid_arguments():
+    ClockScaler(2, Scale.SECOND)
+    with pytest.raises(ValueError):
+        ClockScaler(Scale.SECOND - 1, 0)
+
+    ClockScaler(2, Scale.MICRO)
+    with pytest.raises(ValueError):
+        ClockScaler(Scale.MICRO + 1, 0)
+
+
 def test_current(time_mock):
     clock = ClockScaler(2, 0)
     # Set the current time to 2020-01-01 00:01:01.12345

@@ -1,14 +1,16 @@
 [run]
 branch = True
+omit = easyflake/grpc/*
 
 [report]
 precision = 2
 omit =
     logging.py
 exclude_lines =
-    if TYPE_CHECKING
-    if __name__ == "__main__"
-    if _descriptor._USE_C_DESCRIPTORS == False
+    if TYPE_CHECKING:
+    if __name__ == "__main__":
+    pragma: nocover
     raise NotImplemented
+    except ImportError:
     pass
 fail_under = 60

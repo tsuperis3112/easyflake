@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from unittest import TestCase
 
 import pytest
 
@@ -7,7 +6,7 @@ from easyflake.exceptions import SequenceOverflowError
 from easyflake.sequence import SimpleSequencePool, TimeSequence, TimeSequenceProvider
 
 
-def test_get_required_bits(mocker):
+def test_TimeSequenceProvider_get_required_bits(mocker):
     provider = TimeSequenceProvider(bits=2, epoch=datetime(2023, 2, 8).timestamp(), time_scale=2)
 
     # 10.23
@@ -23,7 +22,7 @@ def test_get_required_bits(mocker):
     assert actual == expected, "1024 (10.24sec) requires 11 bits."
 
 
-def test_next(mocker):
+def test_TimeSequenceProvider_next(mocker):
     first_tick = datetime(2023, 2, 8, 12, 24, 0).timestamp()
     second_tick = datetime(2023, 2, 8, 12, 24, 12, 345000).timestamp()
     third_tick = datetime(2023, 2, 8, 12, 24, 12, 346000).timestamp()
@@ -60,19 +59,47 @@ def test_next(mocker):
     sleep_mock.assert_not_called()
 
 
-class TestSimpleSequencePool(TestCase):
-    def test_pop(self):
-        bits = 2
-        max_value = 4
-        expected_set = {0, 1, 2, 3}
+def test_SimpleSequencePool_pop():
+    bits = 2
+    expected_set = {0, 1, 2, 3}
 
-        pool = SimpleSequencePool()
-        values = set()
+    pool = SimpleSequencePool()
+    values = set()
 
-        for _ in range(max_value):
-            values.add(pool.pop(bits))
+    for _ in range(len(expected_set)):
+        values.add(pool.pop(bits))
 
-        with self.assertRaises(SequenceOverflowError):
-            pool.pop(bits)
+    with pytest.raises(SequenceOverflowError):
+        pool.pop(bits)
 
-        self.assertEqual(values, expected_set)
+    assert values == expected_set
+
+
+def test_SimpleSequencePool_push():
+    bits = 2
+    max_value = (1 << bits) - 1
+
+    pool = SimpleSequencePool()
+    pool.pop(bits)
+
+    pool.push(bits, 0)
+    with pytest.raises(ValueError):
+        pool.push(bits, -1)
+
+    pool.push(bits, max_value)
+    with pytest.raises(ValueError):
+        pool.push(bits, max_value + 1)
+
+
+def test_SimpleSequencePool_rm():
+    bits = 2
+
+    remove_value = 2
+    expected_set = {0, 1, 3}
+
+    pool = SimpleSequencePool()
+    pool.rm(bits, remove_value)
+
+    values = {pool.pop(bits) for _ in range(len(expected_set))}
+
+    assert values == expected_set

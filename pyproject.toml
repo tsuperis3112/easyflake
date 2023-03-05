@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "easyflake"
-version = "0.0.6"
+version = "0.1.0"
 description = "EasyFlake is a Python package for generating 64-bit IDs similar to Snowflake or Sonyflake."
 authors = ["Takeru Furuse <tsuperis@gmail.com>"]
 readme = "README.md"
