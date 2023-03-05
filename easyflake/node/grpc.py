@@ -83,7 +83,20 @@ class NodeIdPool(BaseNodeIdPool):
             asyncio.run(cls._serve(endpoint))
 
     @staticmethod
-    async def _serve(endpoint: str):
+    def _stop_server_signal(*signals: int, server: grpc.aio.Server):
+        async def signal_handler():
+            logging.info("stopping server")
+            await server.stop(1)
+
+        loop = get_running_loop()
+        try:
+            for sig in signals:
+                loop.add_signal_handler(sig, lambda: asyncio.create_task(signal_handler()))
+        except NotImplementedError:  # for Windows
+            pass
+
+    @classmethod
+    async def _serve(cls, endpoint: str):
         logging.success(f"start gRPC server => {endpoint}")
 
         server = grpc.aio.server(futures.ThreadPoolExecutor())
@@ -93,19 +106,7 @@ class NodeIdPool(BaseNodeIdPool):
         server.add_insecure_port(endpoint)
         await server.start()
 
-        loop = get_running_loop()
-
-        def add_signal(sig: int):
-            async def signal_handler():
-                logging.info("stopping server")
-                nonlocal server
-                await server.stop(1)
-                server = None
-
-            loop.add_signal_handler(sig, lambda: asyncio.create_task(signal_handler()))
-
-        add_signal(signal.SIGINT)
-        add_signal(signal.SIGTERM)
+        cls._stop_server_signal(signal.SIGINT, signal.SIGTERM, server=server)
 
         await server.wait_for_termination()
 
@@ -115,20 +116,15 @@ class SequenceServicer(sequence_pb2_grpc.SequenceServicer):
         self._sequence_pool = SimpleSequencePool()
         self._lock = multiprocessing.Lock()
 
-    def take_sequence(self, bits: int):
-        with self._lock:
-            return self._sequence_pool.pop(bits)
-
-    def cleanup_sequence(self, bits: int, sequence: int):
-        with self._lock:
-            self._sequence_pool.push(bits, sequence)
-
     async def LiveStream(
         self, request: sequence_pb2.SequenceRequest, context: grpc.aio.ServicerContext
     ):
+        bits = request.bits
         try:
-            sequence = self.take_sequence(request.bits)
+            with self._lock:
+                sequence = self._sequence_pool.pop(bits)
             logging.debug("connection %s is established", sequence)
+
         except SequenceOverflowError as e:
             await context.abort(grpc.StatusCode.OUT_OF_RANGE, str(e))
             return
@@ -140,4 +136,5 @@ class SequenceServicer(sequence_pb2_grpc.SequenceServicer):
                 await asyncio.sleep(random.random())
         finally:
             logging.debug("connection %s is closed", sequence)
-            self.cleanup_sequence(request.bits, sequence)
+            with self._lock:
+                self._sequence_pool.push(bits, sequence)

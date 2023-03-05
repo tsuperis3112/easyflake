@@ -1,26 +1,46 @@
 from datetime import timedelta
-from unittest.mock import patch
 
 import pytest
 
 from easyflake import EasyFlake, Scale
+from easyflake.node.base import NodeIdPool
 from easyflake.sequence import TimeSequence
 
 
-def test_get_id():
+def test_get_id(mocker):
     timestamp = 123
     node_id = 456
     sequence = TimeSequence(timestamp=timestamp, value=789)
 
     ef = EasyFlake(node_id=node_id, node_id_bits=10, sequence_bits=9)
-    with patch(
+    mocker.patch(
         "easyflake.sequence.TimeSequenceProvider.next",
         return_value=sequence,
-    ):
-        expected_id = timestamp << 19 | node_id << 9 | sequence.value
-        actual_id = ef.get_id()
-        msg = f"Generated ID {actual_id} is not equal to expected ID {expected_id}."
-        assert actual_id == expected_id, msg
+    )
+    expected_id = timestamp << 19 | node_id << 9 | sequence.value
+    actual_id = ef.get_id()
+    msg = f"Generated ID {actual_id} is not equal to expected ID {expected_id}."
+    assert actual_id == expected_id, msg
+
+
+def test_get_id_with_node_id_provider(mocker):
+    timestamp = 123
+    node_id = 456
+    sequence = TimeSequence(timestamp=timestamp, value=789)
+
+    pool = mocker.patch("easyflake.node.base.NodeIdPool", spec=NodeIdPool)
+    pool.get.return_value = node_id
+
+    ef = EasyFlake(node_id=pool, node_id_bits=10, sequence_bits=9)
+
+    mocker.patch(
+        "easyflake.sequence.TimeSequenceProvider.next",
+        return_value=sequence,
+    )
+    expected_id = timestamp << 19 | node_id << 9 | sequence.value
+    actual_id = ef.get_id()
+    msg = f"Generated ID {actual_id} is not equal to expected ID {expected_id}."
+    assert actual_id == expected_id, msg
 
 
 def test_instance_critical_lifetime(mocker):
