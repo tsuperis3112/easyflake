@@ -8,7 +8,6 @@ __all__ = [
 
 class ContextStackManager:
     """
-
     >>> from unittest.mock import MagicMock
     >>> ctx = MagicMock()
     >>> stacked = ContextStackManager(None, ctx)

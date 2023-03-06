@@ -1,5 +1,4 @@
 import os
-import random
 import re
 import sys
 import time
@@ -15,23 +14,20 @@ from .base import NodeIdPool as BaseNodeIdPool
 
 SEP = ":"
 LIFESPAN = 10
-CYCLE = LIFESPAN / 2
 
 
 dataclass_kwargs = {"kw_only": True} if sys.version_info >= (3, 10) else {}
+
+
+def _update_expire():
+    return time.time() + LIFESPAN
 
 
 @dataclass(**dataclass_kwargs)
 class LineStruct:
     bits: int
     sequence: int
-    expire: float = field(default_factory=lambda: time.time() + LIFESPAN)
-
-    def update(self):
-        self.expire = time.time() + LIFESPAN
-
-    def join(self):
-        return SEP.join([str(self.bits), str(self.sequence), str(self.expire)])
+    expire: float = field(default_factory=_update_expire)
 
     _pattern = re.compile(rf"^(?P<bits>\d+){SEP}(?P<sequence>\d+){SEP}(?P<expire>\d+(?:\.\d+)?)$")
 
@@ -46,10 +42,39 @@ class LineStruct:
         expire = float(match.group("expire"))
         return cls(bits=bits, sequence=sequence, expire=expire)
 
+    def join(self):
+        return SEP.join([str(self.bits), str(self.sequence), str(self.expire)])
+
+    def update(self):
+        self.expire = _update_expire()
+
 
 class NodeIdPool(BaseNodeIdPool):
-    def _read(self, sequence_pool: SimpleSequencePool, update_sequence: Optional[int]) -> List[str]:
+    def listen(self):
+        sequence = None
+
+        while True:
+            with LockFile(self.endpoint):
+                pool = SimpleSequencePool()
+                new_lines = self._readlines(pool, sequence)
+
+                if sequence is None:
+                    # generate new sequence
+                    try:
+                        sequence = pool.pop(self.bits)
+                        line = LineStruct(bits=self.bits, sequence=sequence)
+                        new_lines.append(line.join())
+                    except SequenceOverflowError:
+                        pass
+
+                with open(self.endpoint, "w+") as f:
+                    f.write(os.linesep.join(new_lines))
+
+            yield sequence
+
+    def _readlines(self, pool: SimpleSequencePool, update_sequence: Optional[int]) -> List[str]:
         new_lines: List[str] = []
+
         with open(self.endpoint, "a+") as f:
             f.seek(0)
             while l := f.readline():  # noqa: E741
@@ -60,34 +85,10 @@ class NodeIdPool(BaseNodeIdPool):
                     continue
 
                 if line.bits == self.bits:
-                    sequence_pool.rm(line.bits, line.sequence)
+                    pool.rm(line.bits, line.sequence)
                     if line.sequence == update_sequence:
                         # prolong line's lifespan
                         line.update()
                 new_lines.append(line.join())
 
         return new_lines
-
-    def listen(self):
-        sequence = None
-
-        while True:
-            with LockFile(self.endpoint):
-                pool = SimpleSequencePool()
-                new_lines = self._read(pool, sequence)
-
-                if sequence is None:
-                    # generate new sequence
-                    try:
-                        sequence = pool.pop(self.bits)
-                    except SequenceOverflowError:
-                        time.sleep(self.refresh_rate)
-                        continue
-                    line = LineStruct(bits=self.bits, sequence=sequence)
-                    new_lines.append(line.join())
-
-                with open(self.endpoint, "w+") as f:
-                    f.write(os.linesep.join(new_lines))
-                yield sequence
-
-            time.sleep(random.random())

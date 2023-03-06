@@ -64,8 +64,6 @@ def grpc(host: str, port: int, pid_file: Optional[str]):
     """
     run gRPC server to get sequential node IDs.
     """
-    # check if the command is available
-
     NodeIdPool.serve(host, port, pid_file=pid_file)
 
 

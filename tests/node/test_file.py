@@ -3,7 +3,8 @@ from datetime import datetime
 
 import pytest
 
-from easyflake.node.file import LIFESPAN, NodeIdPool
+from easyflake.exceptions import SequenceOverflowError
+from easyflake.node.file import LIFESPAN, LineStruct, NodeIdPool
 
 current = datetime(2023, 3, 4).timestamp()
 expire = current + 1
@@ -15,6 +16,8 @@ existing_lines_10bits = [
     f"10:3:{current}",
     "",
 ]
+
+expected_sequence = 4
 
 existing_lines_2bits = [
     f"2:0:{current}",
@@ -47,14 +50,15 @@ def lock_file_mock(mocker):
 
 
 def test_NodeIdPool_listen(mocker, open_mock_10bits, lock_file_mock):
+    bits = 10
     mocker.patch("time.time", return_value=current)
 
-    pool = NodeIdPool("file", 10)
+    pool = NodeIdPool("file", bits)
 
     data_iter = pool.listen()
-    assert next(data_iter) == 4
+    assert next(data_iter) == expected_sequence
 
-    written_lines = [*existing_lines_10bits[:-1], f"10:4:{current+LIFESPAN}"]
+    written_lines = [*existing_lines_10bits[:-1], f"{bits}:{expected_sequence}:{current+LIFESPAN}"]
     written_data = os.linesep.join(written_lines)
 
     handler = open_mock_10bits()
@@ -62,15 +66,20 @@ def test_NodeIdPool_listen(mocker, open_mock_10bits, lock_file_mock):
 
 
 def test_NodeIdPool_listen_expire_and_update(mocker, open_mock_10bits, lock_file_mock):
+    bits = 10
+
     handler = open_mock_10bits()
-    pool = NodeIdPool("file", 10).listen()
+    pool = NodeIdPool("file", bits).listen()
 
     # current
     mocker.patch("time.time", return_value=current)
 
-    assert next(pool) == 4
+    assert next(pool) == expected_sequence
 
-    updated_written_lines = [*existing_lines_10bits[:-1], f"10:4:{current+LIFESPAN}"]
+    updated_written_lines = [
+        *existing_lines_10bits[:-1],
+        f"{bits}:{expected_sequence}:{current+LIFESPAN}",
+    ]
     written_data = os.linesep.join(updated_written_lines)
     handler.write.assert_called_with(written_data)
 
@@ -80,20 +89,36 @@ def test_NodeIdPool_listen_expire_and_update(mocker, open_mock_10bits, lock_file
     mocker.patch("time.time", return_value=expire)
     mocker.patch("time.sleep")
 
-    assert next(pool) == 4
+    assert next(pool) == expected_sequence
 
-    updated_written_lines = [*existing_lines_10bits[:1], f"10:4:{expire+LIFESPAN}"]
+    updated_written_lines = [
+        *existing_lines_10bits[:1],
+        f"{bits}:{expected_sequence}:{expire+LIFESPAN}",
+    ]
     updated_written_data = os.linesep.join(updated_written_lines)
     handler.write.assert_called_with(updated_written_data)
 
 
 def test_NodeIdPool_listen_depleted(mocker, open_mock_2bits, lock_file_mock):
-    err = EOFError
-    mocker.patch("time.time", return_value=current)
-    mocker.patch("time.sleep", side_effect=[None, EOFError])
+    bits = 2
+    mocker.patch(
+        "easyflake.node.grpc.SimpleSequencePool.pop", side_effect=SequenceOverflowError(bits)
+    )
 
-    pool = NodeIdPool("file", 2)
+    pool = NodeIdPool("file", bits)
 
     data_iter = pool.listen()
-    with pytest.raises(err):
-        next(data_iter)
+    assert next(data_iter) is None
+
+
+def test_LineStruct_parse_valid():
+    line = LineStruct.parse("1:10:100.0")
+    assert line is not None
+    assert line.bits == 1
+    assert line.sequence == 10
+    assert line.expire == 100.0
+
+
+def test_LineStruct_parse_invalid():
+    line = LineStruct.parse("1:10:100.a")
+    assert line is None
