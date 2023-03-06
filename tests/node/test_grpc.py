@@ -82,77 +82,78 @@ def test_NodeIdPool_listen_server_down(mocker):
 
     err = Unavailable()  # type: ignore
 
+    sleep_mock = mocker.patch("time.sleep")
     connection_mock = mocker.patch("easyflake.node.grpc.NodeIdPool._connection")
     connection_mock.LiveStream.side_effect = err
 
-    log_mock = mocker.patch("easyflake.logging.exception")
     data_iter = pool.listen()
 
     with pytest.raises(Unavailable):
         next(data_iter)
 
-    log_mock.assert_called_once_with(err)
+    sleep_mock.assert_not_called()
 
 
 def test_NodeIdPool_listen_depleted(mocker):
     bits = 10
-    sequence = 124
+    sequence = 1
 
     pool = NodeIdPool("localhost", bits)
 
-    err = OutOfRange()  # type: ignore
-
+    err = OutOfRange()
     connection_mock = mocker.patch("easyflake.node.grpc.NodeIdPool._connection")
     connection_mock.LiveStream.side_effect = [err, [SequenceReply(sequence=sequence)]]
 
     data_iter = pool.listen()
-    assert next(data_iter) == sequence
+    assert next(data_iter) is None
+    assert next(data_iter) == 1
 
 
 @pytest.mark.asyncio
 async def test_SequenceServicer_LiveStream_single_users(mocker, context_mock):
-    bits = 0
+    bits = 1
     loop = 2
 
     service = SequenceServicer()
     request = SequenceRequest(bits=bits)
-
-    sleep_mock = mocker.patch("asyncio.sleep")
 
     response_iter = service.LiveStream(request, context_mock)
     for _ in range(loop):
         rep = await anext(response_iter)
         assert rep.sequence == 0
 
-    sleep_mock.assert_called()
-
 
 @pytest.mark.asyncio
 async def test_SequenceServicer_LiveStream_exit(mocker, context_mock):
-    bits = 0
+    bits = 1
+    sequence = 1
+
+    pop_mock = mocker.patch("easyflake.sequence.SimpleSequencePool.pop")
+    pop_mock.return_value = sequence
+    push_mock = mocker.patch("easyflake.sequence.SimpleSequencePool.push")
+
+    mocker.patch("easyflake.grpc.sequence_pb2.SequenceReply", side_effect=Cancelled)
 
     service = SequenceServicer()
     request = SequenceRequest(bits=bits)
-
-    mocker.patch("asyncio.sleep", side_effect=Cancelled)
-
     response_iter = service.LiveStream(request, context_mock)
-    rep = await anext(response_iter)
-    assert rep.sequence == 0
 
     with pytest.raises(Cancelled):
         await anext(response_iter)
+
+    pop_mock.assert_called_once_with(bits)
+    push_mock.assert_called_once_with(bits, sequence)
 
 
 @pytest.mark.asyncio
 async def test_SequenceServicer_LiveStream_multi_users(context_mock):
     bits = 2
-    loop = 4
+    count = 1 << bits
 
     service = SequenceServicer()
     request = SequenceRequest(bits=bits)
 
-    for i in range(loop):
+    for i in range(count):
         response_iter = service.LiveStream(request, context_mock)
         rep = await anext(response_iter)
         assert rep.sequence == i

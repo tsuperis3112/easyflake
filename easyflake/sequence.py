@@ -5,7 +5,7 @@ from multiprocessing import Value
 from multiprocessing.sharedctypes import Synchronized
 from typing import TYPE_CHECKING, Dict, Set
 
-from easyflake.clock import ClockScaler
+from easyflake.clock import ScaledClock
 from easyflake.exceptions import SequenceOverflowError
 
 __all__ = [
@@ -40,7 +40,7 @@ class TimeSequenceProvider:
         self._sequence_max = 2**bits - 1
         self._sequence_mask = 2**self._bits - 1
 
-        self._clock = ClockScaler(time_scale, epoch=epoch)
+        self._clock = ScaledClock(time_scale, epoch=epoch)
 
         _, val = self._attach_timestamp_to_value(0)
         if TYPE_CHECKING:

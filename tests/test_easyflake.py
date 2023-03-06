@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 
-from easyflake import EasyFlake, Scale
+from easyflake import EasyFlake, TimeScale
 from easyflake.node.base import NodeIdPool
 from easyflake.sequence import TimeSequence
 
@@ -48,7 +48,7 @@ def test_instance_critical_lifetime(mocker):
         "node_id": 0,
         "node_id_bits": 10,
         "sequence_bits": 10,
-        "time_scale": Scale.SECOND,
+        "time_scale": TimeScale.SECOND,
     }
 
     # not dangerous lifetime
@@ -72,7 +72,7 @@ def test_instance_dangerous_lifetime(mocker):
         "node_id": 0,
         "node_id_bits": 10,
         "sequence_bits": 10,
-        "time_scale": Scale.SECOND,
+        "time_scale": TimeScale.SECOND,
     }
 
     mocker.patch(

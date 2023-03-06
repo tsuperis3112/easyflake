@@ -10,14 +10,6 @@ from easyflake import config
 logger = logging.getLogger("easyflake")
 
 
-def _console(loglevel: int, message: str, *args, color: Optional[str] = None):
-    level_name = logging.getLevelName(loglevel)
-    message = f"[%s] {message}" % (level_name, *args)
-    if color and config.COLOR_MODE:
-        message = click.style(message, fg=color)
-    click.echo(message)
-
-
 def debug(message: str, *args):
     if config.DAEMON_MODE:
         logger.debug(message, *args)
@@ -59,3 +51,11 @@ def exception(e: Exception):
     else:
         lines = traceback.format_exception(type(e), value=e, tb=e.__traceback__)
         error(os.linesep.join(lines))
+
+
+def _console(loglevel: int, message: str, *args, color: Optional[str] = None):
+    level_name = logging.getLevelName(loglevel)
+    message = f"[%s] {message}" % (level_name, *args)
+    if color and config.COLOR_MODE:
+        message = click.style(message, fg=color)
+    click.echo(message)

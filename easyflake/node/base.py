@@ -1,8 +1,11 @@
 import abc
 import multiprocessing
 import random
+import time
 from multiprocessing.sharedctypes import Synchronized
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING, Iterator, Optional
+
+from easyflake import logging
 
 TIMEOUT = 3
 INVALID_VALUE = -255
@@ -10,15 +13,20 @@ INVALID_VALUE = -255
 
 class NodeIdPool(abc.ABC):
     def __init__(self, endpoint: str, bits: int, *, timeout: int = TIMEOUT):
+        """
+        Base class for each NodeIdPool.
+        This class provides a `get` method to allocated node ID.
+
+        Subclasses should implement the `listen` method.
+        """
         self.bits = bits
         self.endpoint = endpoint
         self.timeout = timeout
 
+        # Shared objects
         self._lock = multiprocessing.Lock()
-
         self._running_event = multiprocessing.Event()
         self._value_event = multiprocessing.Event()
-
         if TYPE_CHECKING:
             self._shared_node_id: Synchronized[int]
         else:
@@ -29,25 +37,36 @@ class NodeIdPool(abc.ABC):
         return self.timeout / 2 * random.random()
 
     def __del__(self):
-        self.stop()
+        try:
+            self.stop()
+        except OSError:  # pragma: nocover
+            pass
 
     @abc.abstractmethod
-    def listen(self) -> Iterator[int]:
-        """
-        Listen for allocated node ID.
-        Set status and node_id.
+    def listen(self) -> Iterator[Optional[int]]:
+        """Listen for allocated node ID.
+
+        Yields
+        ------
+        Generator[int | None, None, None]
+
         """
 
-    def _listen_forever(self):
+    def _start_listening(self):
         try:
             for seq in self.listen():
                 with self._lock:
                     if not self._running_event.is_set():
                         return
-                    self._node_id = seq
-                    self._value_event.set()
-        except Exception:
+                    if seq is not None:
+                        self._node_id = seq
+                        self._value_event.set()
+                time.sleep(self.refresh_rate)
+
+        except Exception as e:
+            logging.exception(e)
             self.fail()
+
         finally:
             self.stop()
 
@@ -57,7 +76,7 @@ class NodeIdPool(abc.ABC):
                 return
             self._running_event.set()
 
-            proc = multiprocessing.Process(target=self._listen_forever, daemon=True)
+            proc = multiprocessing.Process(target=self._start_listening, daemon=True)
             proc.start()
 
     def fail(self):
@@ -73,11 +92,14 @@ class NodeIdPool(abc.ABC):
 
     def get(self) -> int:
         self.start()
-        if self._value_event.wait(timeout=self.timeout):
-            if (node_id := self._node_id) == INVALID_VALUE:
-                raise ConnectionError("failed to listening server")
-            return node_id
-        raise TimeoutError("cannot get sequence value from server")
+
+        if not self._value_event.wait(timeout=self.timeout):
+            raise TimeoutError("cannot get sequence value from server")
+
+        node_id = self._node_id
+        if node_id == INVALID_VALUE:
+            raise ConnectionError("failed to listening server")
+        return node_id
 
     @property
     def _node_id(self) -> int:

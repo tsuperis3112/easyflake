@@ -1,18 +1,16 @@
 from datetime import timedelta
 from typing import Union
 
-from easyflake.clock import Scale
+from easyflake.clock import TimeScale
 from easyflake.logging import warning
 from easyflake.node import BaseNodeIdPool
 from easyflake.sequence import TimeSequenceProvider
 
 DEFAULT_EPOCH_TIMESTAMP = 1675859040
 
-UNSET = type("UNSET", (), {})
-
 
 class EasyFlake:
-    id_bits = 64
+    max_bits = 64
 
     def __init__(
         self,
@@ -20,14 +18,14 @@ class EasyFlake:
         node_id_bits: int = 8,
         sequence_bits: int = 8,
         epoch: float = DEFAULT_EPOCH_TIMESTAMP,
-        time_scale: int = Scale.MILLI,
+        time_scale: int = TimeScale.MILLI,
         **kwargs,
     ):
         """
         Class for generating 64-bit IDs similar to Snowflake or Sonyflake.
 
         Args:
-            node_id (int, NodeIdPool): node ID of execution environment.
+            node_id (int, NodeIdPool): node ID (or generator) of execution environment.
             node_id_bits (int): maximum number of bits in node ID part.
             sequence_bits (int): maximum number of bits in sequence ID part.
             epoch (float): Timestamp that is used as a reference when generating bits of timestamp
@@ -96,4 +94,4 @@ class EasyFlake:
         delta = timedelta(days=365 * years)
         timestamp_bits = self._sequence_provider.get_required_bits(delta)
         bits = timestamp_bits + self._node_id_bits + self._sequence_bits
-        return bits < self.id_bits
+        return bits < self.max_bits

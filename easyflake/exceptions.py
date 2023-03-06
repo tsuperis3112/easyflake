@@ -1,6 +1,5 @@
 class SequenceOverflowError(Exception):
     def __init__(self, bits: int):
-        self.max_value = (1 << bits) - 1
-
-    def __str__(self):
-        return f"The sequence has reached the maximum value of {self.max_value}."
+        self.bits = bits
+        max_val = (1 << bits) - 1
+        super().__init__("The sequence has reached the maximum value of %s.", max_val)
