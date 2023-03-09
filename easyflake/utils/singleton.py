@@ -4,19 +4,19 @@ from typing import Any, Dict
 
 
 class Singleton(object):
-    __instances: Dict[int, Any] = {}
-    __lock = threading.Lock()
+    _instances: Dict[int, Any] = {}
+    _thread_lock = threading.Lock()
 
     def __new__(cls, *args, **kwargs):
         signature = inspect.signature(cls)
         bound_args = signature.bind(*args, **kwargs)
         arg_hash = _recursive_hash(bound_args.arguments.items())
 
-        with cls.__lock:
-            if arg_hash not in cls.__instances:
-                cls.__instances[arg_hash] = super().__new__(cls)
+        with cls._thread_lock:
+            if arg_hash not in cls._instances:
+                cls._instances[arg_hash] = super().__new__(cls)
 
-        return cls.__instances[arg_hash]
+        return cls._instances[arg_hash]
 
 
 def _recursive_hash(obj):
