@@ -33,7 +33,7 @@ poetry install --sync
 We use pytest for testing. You can run the tests with the following command:
 
 ```bash
-poetry run pytest --cov=easyflake
+poetry run pytest
 ```
 
 Make sure that all tests pass before submitting your contribution.
