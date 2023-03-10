@@ -49,11 +49,17 @@ def lock_file_mock(mocker):
     mocker.patch("easyflake.node.file.LockFile")
 
 
-def test_NodeIdPool_listen(mocker, open_mock_10bits, lock_file_mock):
+@pytest.fixture
+def target_class():
+    yield NodeIdPool
+    NodeIdPool.__singleton_instances__ = {}
+
+
+def test_NodeIdPool_listen(mocker, target_class, open_mock_10bits, lock_file_mock):
     bits = 10
     mocker.patch("time.time", return_value=current)
 
-    pool = NodeIdPool("file", bits)
+    pool = target_class("file", bits)
 
     data_iter = pool.listen()
     assert next(data_iter) == expected_sequence
@@ -65,11 +71,11 @@ def test_NodeIdPool_listen(mocker, open_mock_10bits, lock_file_mock):
     handler.write.assert_called_once_with(written_data)
 
 
-def test_NodeIdPool_listen_expire_and_update(mocker, open_mock_10bits, lock_file_mock):
+def test_NodeIdPool_listen_update(mocker, target_class, open_mock_10bits, lock_file_mock):
     bits = 10
 
     handler = open_mock_10bits()
-    pool = NodeIdPool("file", bits).listen()
+    pool = target_class("file", bits).listen()
 
     # current
     mocker.patch("time.time", return_value=current)
@@ -99,13 +105,13 @@ def test_NodeIdPool_listen_expire_and_update(mocker, open_mock_10bits, lock_file
     handler.write.assert_called_with(updated_written_data)
 
 
-def test_NodeIdPool_listen_depleted(mocker, open_mock_2bits, lock_file_mock):
+def test_NodeIdPool_listen_depleted(mocker, target_class, open_mock_2bits, lock_file_mock):
     bits = 2
     mocker.patch(
         "easyflake.node.grpc.SimpleSequencePool.pop", side_effect=SequenceOverflowError(bits)
     )
 
-    pool = NodeIdPool("file", bits)
+    pool = target_class("file", bits)
 
     data_iter = pool.listen()
     assert next(data_iter) is None

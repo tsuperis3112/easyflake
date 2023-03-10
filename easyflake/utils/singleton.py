@@ -1,6 +1,7 @@
 import abc
 import inspect
 import threading
+from typing import Any, Dict
 
 
 class SingletonMeta(type):
@@ -9,6 +10,9 @@ class SingletonMeta(type):
     possible methods include: base class, decorator, metaclass. We will use the
     metaclass because it is best suited for this purpose.
     """
+
+    __singleton_lock__: threading.Lock
+    __singleton_instances__: Dict[int, Any]
 
     def __new__(cls, cls_name, cls_bases, cls_dict):
         cls_dict.update({"__singleton_lock__": threading.Lock(), "__singleton_instances__": {}})

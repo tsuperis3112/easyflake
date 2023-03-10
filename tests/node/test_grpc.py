@@ -23,6 +23,12 @@ def daemon_mode(mocker):
     mocker.patch("easyflake.config.DAEMON_MODE", True)
 
 
+@pytest.fixture
+def target_class():
+    yield NodeIdPool
+    NodeIdPool.__singleton_instances__ = {}
+
+
 class Cancelled(Exception, grpc.Call):
     __abstractmethods__ = set()  # type: ignore
 
@@ -44,11 +50,11 @@ class OutOfRange(Exception, grpc.Call):
         return grpc.StatusCode.OUT_OF_RANGE
 
 
-def test_NodeIdPool_listen(mocker):
+def test_NodeIdPool_listen(mocker, target_class):
     bits = 10
     sequence = 123
 
-    pool = NodeIdPool("localhost", bits)
+    pool = target_class("localhost", bits)
 
     connection_mock = mocker.patch("easyflake.node.grpc.NodeIdPool._connection")
 
@@ -62,10 +68,10 @@ def test_NodeIdPool_listen(mocker):
     assert next(data_iter) == sequence
 
 
-def test_NodeIdPool_listen_cancel(mocker):
+def test_NodeIdPool_listen_cancel(mocker, target_class):
     bits = 10
 
-    pool = NodeIdPool("localhost", bits)
+    pool = target_class("localhost", bits)
 
     connection_mock = mocker.patch("easyflake.node.grpc.NodeIdPool._connection")
     connection_mock.LiveStream.side_effect = Cancelled()  # type: ignore
@@ -75,10 +81,10 @@ def test_NodeIdPool_listen_cancel(mocker):
         next(data_iter)
 
 
-def test_NodeIdPool_listen_server_down(mocker):
+def test_NodeIdPool_listen_server_down(mocker, target_class):
     bits = 10
 
-    pool = NodeIdPool("localhost", bits)
+    pool = target_class("localhost", bits)
 
     err = Unavailable()  # type: ignore
 
@@ -94,11 +100,11 @@ def test_NodeIdPool_listen_server_down(mocker):
     sleep_mock.assert_not_called()
 
 
-def test_NodeIdPool_listen_depleted(mocker):
+def test_NodeIdPool_listen_depleted(mocker, target_class):
     bits = 10
     sequence = 1
 
-    pool = NodeIdPool("localhost", bits)
+    pool = target_class("localhost", bits)
 
     err = OutOfRange()
     connection_mock = mocker.patch("easyflake.node.grpc.NodeIdPool._connection")

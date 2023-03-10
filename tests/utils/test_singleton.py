@@ -5,13 +5,15 @@ import pytest
 from easyflake.utils.singleton import SingletonMeta
 
 
+class Singleton(metaclass=SingletonMeta):
+    def __init__(self, arg1, *args, argn=None, **kwargs):
+        pass
+
+
 @pytest.fixture
 def singleton_class():
-    class Singleton(metaclass=SingletonMeta):
-        def __init__(self, arg1, *args, argn=None, **kwargs):
-            pass
-
-    return Singleton
+    yield Singleton
+    Singleton.__singleton_instances__ = {}
 
 
 @pytest.mark.skipif(sys.version_info >= (3, 9), reason="only test for python3.8")
