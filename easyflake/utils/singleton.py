@@ -1,24 +1,44 @@
+import abc
 import inspect
 import threading
-from collections import defaultdict
-from typing import Any, DefaultDict, Dict
+from typing import Any, Dict
 
 
-class Singleton(object):
-    _instances: DefaultDict[int, Dict[int, Any]] = defaultdict(dict)
-    _thread_lock = threading.Lock()
+class SingletonMeta(type):
+    """
+    The Singleton class can be implemented in different ways in Python. Some
+    possible methods include: base class, decorator, metaclass. We will use the
+    metaclass because it is best suited for this purpose.
+    """
 
-    def __new__(cls, *args, **kwargs):
-        signature = inspect.signature(cls)
-        bound_args = signature.bind(*args, **kwargs)
-        arg_hash = _recursive_hash(bound_args.arguments.items())
+    __singleton_lock__: threading.Lock
+    __singleton_instances__: Dict[int, Any]
 
-        with cls._thread_lock:
-            instances = cls._instances[id(cls)]
-            if arg_hash not in instances:
-                instances[arg_hash] = super().__new__(cls)
+    def __new__(cls, cls_name, cls_bases, cls_dict):
+        cls_dict.update({"__singleton_lock__": threading.Lock(), "__singleton_instances__": {}})
+        return super().__new__(cls, cls_name, cls_bases, cls_dict)
 
-        return instances[arg_hash]
+    def __call__(self, *args, **kwargs):
+        """
+        Possible changes to the value of the `__init__` argument do not affect
+        the returned instance.
+        """
+        cls_id = id(self)
+
+        signature = inspect.signature(self.__init__)
+        bound_args = signature.bind(cls_id, *args, **kwargs)
+        args_hash = _recursive_hash(bound_args.arguments.items())
+
+        with self.__singleton_lock__:
+            instances = self.__singleton_instances__
+            if args_hash not in instances:
+                instances[args_hash] = super().__call__(*args, **kwargs)
+
+        return instances[args_hash]
+
+
+class SingletonABCMeta(abc.ABCMeta, SingletonMeta):
+    ...
 
 
 def _recursive_hash(obj):
