@@ -1,3 +1,7 @@
+import sys
+
+import pytest
+
 from easyflake.utils.singleton import Singleton
 
 
@@ -6,6 +10,23 @@ class DummySingleton(Singleton):
         pass
 
 
+@pytest.mark.skipif(sys.version_info >= (3, 9), reason="only test for python3.8")
+def test_singleton():
+    class A:
+        pass
+
+    s1 = DummySingleton(A(), argn=1, arg2={"a": "A", "b": 2})
+    s2 = DummySingleton(A(), argn=1, arg2={"a": "A", "b": 2})
+    s3 = DummySingleton(A(), argn=2, arg2={"a": "A", "b": 2})
+
+    assert s1 == s2
+    assert s2 != s3
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="The inspect module does not provide a complete list of arguments",
+)
 def test_singleton_obj():
     class A:
         pass
@@ -16,6 +37,10 @@ def test_singleton_obj():
     assert s1 == s2
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="The inspect module in does not provide a complete list of arguments",
+)
 def test_singleton_str():
     s1 = DummySingleton(arg1="str")
     s2 = DummySingleton("str")
@@ -25,6 +50,10 @@ def test_singleton_str():
     assert s2 != s3
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="The inspect module in does not provide a complete list of arguments",
+)
 def test_singleton_int():
     s1 = DummySingleton(arg1=1)
     s2 = DummySingleton(1)
@@ -34,6 +63,10 @@ def test_singleton_int():
     assert s2 != s3
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="The inspect module in does not provide a complete list of arguments",
+)
 def test_singleton_bool():
     s1 = DummySingleton(arg1=True)
     s2 = DummySingleton(True)
@@ -43,6 +76,10 @@ def test_singleton_bool():
     assert s2 != s3
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="The inspect module in does not provide a complete list of arguments",
+)
 def test_singleton_tuple():
     s1 = DummySingleton(arg1=(1, 2, 3))
     s2 = DummySingleton((1, 2, 3))
@@ -52,6 +89,10 @@ def test_singleton_tuple():
     assert s2 != s3
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="The inspect module in does not provide a complete list of arguments",
+)
 def test_singleton_list():
     s1 = DummySingleton(arg1=[1, 2, 3])
     s2 = DummySingleton([1, 2, 3])
@@ -61,6 +102,10 @@ def test_singleton_list():
     assert s2 != s3
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="The inspect module in does not provide a complete list of arguments",
+)
 def test_singleton_set():
     s1 = DummySingleton(arg1={1, 2, 3})
     s2 = DummySingleton({1, 2, 3})
@@ -70,6 +115,10 @@ def test_singleton_set():
     assert s2 != s3
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="The inspect module in does not provide a complete list of arguments",
+)
 def test_singleton_dict():
     class A:
         pass
@@ -82,6 +131,10 @@ def test_singleton_dict():
     assert s2 != s3
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9),
+    reason="The inspect module in does not provide a complete list of arguments",
+)
 def test_singleton_change_arg_sort():
     s1 = DummySingleton(argn="N", arg1=1, arg2=2)
     s2 = DummySingleton(1, arg2=2, argn="N")

@@ -1,10 +1,11 @@
 import inspect
 import threading
-from typing import Any, Dict
+from collections import defaultdict
+from typing import Any, DefaultDict, Dict
 
 
 class Singleton(object):
-    _instances: Dict[int, Any] = {}
+    _instances: DefaultDict[int, Dict[int, Any]] = defaultdict(dict)
     _thread_lock = threading.Lock()
 
     def __new__(cls, *args, **kwargs):
@@ -13,10 +14,11 @@ class Singleton(object):
         arg_hash = _recursive_hash(bound_args.arguments.items())
 
         with cls._thread_lock:
-            if arg_hash not in cls._instances:
-                cls._instances[arg_hash] = super().__new__(cls)
+            instances = cls._instances[id(cls)]
+            if arg_hash not in instances:
+                instances[arg_hash] = super().__new__(cls)
 
-        return cls._instances[arg_hash]
+        return instances[arg_hash]
 
 
 def _recursive_hash(obj):
