@@ -35,8 +35,9 @@ def test_singleton_obj(singleton_class):
     class A:
         pass
 
-    s1 = singleton_class(A())
-    s2 = singleton_class(A())
+    a = A()
+    s1 = singleton_class(a)
+    s2 = singleton_class(arg1=a)
 
     assert s1 == s2
 
