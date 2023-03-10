@@ -6,12 +6,13 @@ from multiprocessing.sharedctypes import Synchronized
 from typing import TYPE_CHECKING, Iterator, Optional
 
 from easyflake import logging
+from easyflake.utils.singleton import Singleton
 
 TIMEOUT = 3
 INVALID_VALUE = -255
 
 
-class NodeIdPool(abc.ABC):
+class NodeIdPool(abc.ABC, Singleton):
     def __init__(self, endpoint: str, bits: int, *, timeout: int = TIMEOUT):
         """
         Base class for each NodeIdPool.

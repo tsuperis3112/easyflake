@@ -10,7 +10,7 @@ DEFAULT_EPOCH_TIMESTAMP = 1675859040
 
 
 class EasyFlake:
-    max_bits = 64
+    _max_bits = 64
 
     def __init__(
         self,
@@ -94,4 +94,4 @@ class EasyFlake:
         delta = timedelta(days=365 * years)
         timestamp_bits = self._sequence_provider.get_required_bits(delta)
         bits = timestamp_bits + self._node_id_bits + self._sequence_bits
-        return bits < self.max_bits
+        return bits < self._max_bits

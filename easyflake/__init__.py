@@ -1,8 +1,7 @@
 from importlib import metadata
 
-from .clock import TimeScale
-from .easyflake import EasyFlake
-from .node import *  # noqa
+from easyflake.clock import TimeScale
+from easyflake.easyflake import EasyFlake
 
 __all__ = [
     "__version__",
