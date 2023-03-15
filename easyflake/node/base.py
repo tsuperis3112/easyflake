@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Iterator, Optional
 from easyflake import logging
 from easyflake.utils.singleton import SingletonABCMeta
 
-TIMEOUT = 3
+TIMEOUT = 5
 INVALID_VALUE = -255
 
 
@@ -25,6 +25,7 @@ class NodeIdPool(metaclass=SingletonABCMeta):
         self.timeout = timeout
 
         # Shared objects
+        self._subprocess: Optional[multiprocessing.Process] = None
         self._lock = multiprocessing.Lock()
         self._running_event = multiprocessing.Event()
         self._value_event = multiprocessing.Event()
@@ -45,15 +46,10 @@ class NodeIdPool(metaclass=SingletonABCMeta):
 
     @abc.abstractmethod
     def listen(self) -> Iterator[Optional[int]]:
-        """Listen for allocated node ID.
-
-        Yields
-        ------
-        Generator[int | None, None, None]
-
-        """
+        """Listen for allocated node ID."""
 
     def _start_listening(self):
+        self._subprocess = None
         try:
             for seq in self.listen():
                 with self._lock:
@@ -63,13 +59,24 @@ class NodeIdPool(metaclass=SingletonABCMeta):
                         self._node_id = seq
                         self._value_event.set()
                 time.sleep(self.refresh_rate)
+            else:
+                self.stop()
+
+        except KeyboardInterrupt:
+            self.stop()
 
         except Exception as e:
             logging.exception(e)
             self.fail()
 
-        finally:
-            self.stop()
+    def _stop_listening(self):
+        self._running_event.clear()
+        try:
+            if self._subprocess is not None:
+                self._subprocess.kill()
+                self._subprocess = None
+        except Exception:
+            pass
 
     def start(self):
         with self._lock:
@@ -77,19 +84,19 @@ class NodeIdPool(metaclass=SingletonABCMeta):
                 return
             self._running_event.set()
 
-            proc = multiprocessing.Process(target=self._start_listening, daemon=True)
-            proc.start()
+            self._subprocess = multiprocessing.Process(target=self._start_listening, daemon=True)
+            self._subprocess.start()
 
     def fail(self):
         with self._lock:
             self._node_id = INVALID_VALUE
             self._value_event.set()
-            self._running_event.clear()
+            self._stop_listening()
 
     def stop(self):
         with self._lock:
             self._value_event.clear()
-            self._running_event.clear()
+            self._stop_listening()
 
     def get(self) -> int:
         self.start()

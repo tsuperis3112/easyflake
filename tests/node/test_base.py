@@ -13,6 +13,7 @@ def process_mock(mocker):
             self.target()
 
     mocker.patch("multiprocessing.synchronize.Lock")
+    mocker.patch("multiprocessing.Lock")
     mocker.patch("multiprocessing.Process", side_effect=ProcessMock)
 
 
@@ -91,7 +92,7 @@ def test_NodeIdPool_start_stop_by_other_process(mocker, infinite_pool_class, pro
     pool.start()
 
     fail_mock.assert_not_called()
-    stop_mock.assert_called()
+    stop_mock.assert_not_called()
 
 
 def test_NodeIdPool_start_already_started(mocker, infinite_pool_class):
